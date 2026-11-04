@@ -18,7 +18,7 @@ MLON = math.cos(math.radians(CENTER[0]))
 ALPHAS = [0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4]
 KNEE_SHARE = 0.8  # Take the shortest detour that gets 80% of the best available saving.
 EDGE_PENALTY_M = 8.0  # Every extra piece of path costs a little, which stops routes zigzagging between sidewalks.
-CONGESTION_WEIGHT = 1.0
+CONGESTION_WEIGHT = 2.0
 COVERAGE_M = 300
 HEAVY_CONGESTION = 0.4
 
@@ -138,8 +138,21 @@ class Network:
         live = np.array([self.congestion.get(i, 0.0) for i in ix["ids"]]) if self.congestion else 0.0
         factor = 1.0 + (ix["road"] + ix["zone"] + CONGESTION_WEIGHT * live if asthma else 0.0)
 
+        base_air = self._air_cost(base)
+
         def badness(st):
-            return st["segment_exposure"] + (self._air_cost(st) if asthma else 0.0)
+            """Pollen and air as shares of the direct route, so neither swamps the other because of its units."""
+            pollen = st["segment_exposure"] / base["segment_exposure"] if base["segment_exposure"] > 0 else 0.0
+            if not asthma:
+                return pollen
+            return pollen + (self._air_cost(st) / base_air if base_air > 0 else 0.0)
+
+        def traffic_ok(st):
+            """Someone with asthma never gets more metres in heavy traffic or on major roads than the direct route."""
+            if not asthma:
+                return True
+            metres = lambda r, key: r["length_m"] * r[key]
+            return metres(st, "congested_share") <= metres(base, "congested_share") + 1 and metres(st, "major_road_share") <= metres(base, "major_road_share") + 1
 
         options = [(base["length_m"], badness(base), base_path)]
         for alpha in ALPHAS:
@@ -147,11 +160,12 @@ class Network:
             st = self.stats(path, weights)
             if st["length_m"] > budget:
                 break
-            options.append((st["length_m"], badness(st), path))
+            if traffic_ok(st):
+                options.append((st["length_m"], badness(st), path))
         worst, best = options[0][1], min(o[1] for o in options)
         target = worst - KNEE_SHARE * (worst - best)
         return min((o for o in options if o[1] <= target), key=lambda o: o[0])[2]
 
     @staticmethod
     def _air_cost(s):
-        return s["length_m"] * (s["major_road_share"] * 0.6 + s["pollution_zone_share"] * 0.3 + s.get("congested_share", 0.0) * CONGESTION_WEIGHT)
+        return s["length_m"] * (1 + s["major_road_share"] * 0.6 + s["pollution_zone_share"] * 0.3 + s.get("congested_share", 0.0) * CONGESTION_WEIGHT)

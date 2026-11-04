@@ -20,6 +20,7 @@ from pipeline.config import CENTER, RADIUS_M, ROOT, es_client, has_elastic
 ZOOM = 14
 REFRESH_S = 300
 MATCH_M = 18
+SHOW_FROM = 0.25  # Free-flowing streets stay off the map so real congestion stands out.
 TRAFFIC_INDEX = "cr_traffic"
 LAYER = "Traffic flow"
 TZ = ZoneInfo("America/Los_Angeles")
@@ -90,7 +91,7 @@ class Traffic:
 
     def status(self):
         if self.live:
-            return {"live": True, "updated": self.updated.isoformat(), "source": "TomTom", "segments": [{"c": c, "level": lv} for c, lv in self.lines]}
+            return {"live": True, "updated": self.updated.isoformat(), "source": "TomTom", "segments": [{"c": c, "level": lv} for c, lv in self.lines if lv >= SHOW_FROM]}
         return {"live": False, "source": None, "segments": [], "reason": self.error}
 
     def fetch(self, key):
@@ -129,7 +130,8 @@ class Traffic:
             es.indices.create(index=TRAFFIC_INDEX, mappings={"properties": {"line": {"type": "geo_shape"}, "congestion": {"type": "float"}, "updated": {"type": "date"}, "source": {"type": "keyword"}}})
         docs = ({"_index": TRAFFIC_INDEX, "_id": hashlib.md5(str(c).encode()).hexdigest(), "_source": {
             "line": {"type": "LineString", "coordinates": [[p[1], p[0]] for p in c]}, "congestion": lv, "updated": stamp.isoformat(), "source": "TomTom"}} for c, lv in lines)
-        helpers.bulk(es, docs, chunk_size=2000, raise_on_error=False)
+        ok, errors = helpers.bulk(es, docs, chunk_size=2000, raise_on_error=False)
+        print(f"traffic: stored {ok} lines in Elastic, {len(errors)} errors", str(errors[:1])[:300] if errors else "", flush=True)
 
     def refresh(self, key):
         lines = self.fetch(key)
@@ -138,7 +140,10 @@ class Traffic:
         self.updated = datetime.now(TZ)
         self.net.congestion = self.by_edge
         print(f"traffic: {len(lines)} lines, {len(self.by_edge)} walking edges matched", flush=True)
-        self.store(lines, self.updated)
+        try:
+            self.store(lines, self.updated)
+        except Exception as e:  # Routing still works if the Elastic copy fails.
+            print("traffic: Elastic store failed", type(e).__name__, str(e)[:200], flush=True)
 
     def loop(self):
         while True:

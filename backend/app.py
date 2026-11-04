@@ -104,13 +104,12 @@ def mistral():
 
 
 def fast_then_large(call):
-    """Try the quick model; on a rate limit, wait briefly and fall back to Large."""
+    """Try the quick model with a short timeout, then fall back to Large, so a slow API can't hang the page."""
     try:
-        return call(SMALL_MODEL)
+        return call(SMALL_MODEL, 8000)
     except Exception as e:
         print("small model failed:", type(e).__name__, str(e)[:120], flush=True)
-    time.sleep(1)
-    return call(LARGE_MODEL)
+    return call(LARGE_MODEL, 25000)
 
 
 def text_of(message):
@@ -320,7 +319,7 @@ def trip_places(text, start, end):
 def understand(text):
     require_mistral()
     allowed = [g for g in BLOOM if g != LOW_ALLERGEN]
-    r = fast_then_large(lambda model: mistral().chat.parse(model=model, response_format=Understood, messages=[
+    r = fast_then_large(lambda model, timeout: mistral().chat.parse(model=model, timeout_ms=timeout, response_format=Understood, messages=[
         {"role": "system", "content": f"Extract health-profile and trip details from what a San Francisco walker says. Allowed groups: {', '.join(allowed)}. Use only those ids. Birch relates to alder; cypress family includes juniper and cedar. Olive relates to ash and privet. Add a cross-reactive group only if it is well established, and note why. If they say only 'pollen' or 'trees', return an empty groups list. Do not invent places."},
         {"role": "user", "content": text}]))
     u = r.choices[0].message.parsed

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -59,8 +59,7 @@
         </section>
 
         <section id="result" class="result" aria-label="Route result" aria-live="polite">
-          <p id="result-empty" class="result-empty">Say where you're going, or click the map to set a start and an end.</p>
-          <p id="route-status" class="status" role="status" hidden></p>
+          <p id="result-empty" class="result-empty">Enter a destination to compare routes, or click the map.</p>
           <div id="route-error" class="notice notice-error" role="alert" hidden>
             <p id="route-error-text"></p>
             <button id="route-retry" type="button" class="btn btn-small">Try again</button>
@@ -70,6 +69,8 @@
               <p class="hero-pct"><span id="hero-pct-value"></span></p>
               <p id="hero-pct-label" class="hero-pct-label">less estimated exposure</p>
               <p id="hero-wide" class="hero-same-detail"></p>
+              <p id="hero-off-title" class="hero-same-title" hidden></p>
+              <p id="hero-off-detail" class="hero-same-detail" hidden></p>
               <p id="hero-time" class="hero-time"></p>
             </div>
             <div id="hero-same" hidden>
@@ -89,14 +90,15 @@
             <label class="switch"><span>I have asthma</span><input id="asthma" type="checkbox" role="switch"></label>
           </div>
 
-          <div class="field">
-            <div class="month-head">
-              <label for="month" class="field-label">Month</label>
-              <output id="month-value" for="month" class="month-value">March</output>
-            </div>
-            <input id="month" type="range" min="1" max="12" step="1" value="3">
-            <div class="month-ends" aria-hidden="true"><span>Jan</span><span>Dec</span></div>
+          <div class="field month-field">
+            <p class="month-now"><span id="month-value" class="month-value"></span><span id="month-tag" class="month-tag" hidden>Planning ahead</span></p>
             <p id="bloom-note" class="small"></p>
+            <button id="month-plan" type="button" class="link">Plan for another month</button>
+            <div id="month-picker" class="month-picker" hidden>
+              <label for="month-select" class="visually-hidden">Month</label>
+              <select id="month-select"></select>
+              <button id="month-today" type="button" class="link">Back to today</button>
+            </div>
           </div>
 
           <label class="switch"><span>Street exposure layer</span><input id="heat-toggle" type="checkbox" role="switch" checked></label>
@@ -161,6 +163,8 @@
 
       <div class="map-wrap">
         <div id="map" aria-label="Map of San Francisco. Click to set a start, then an end."></div>
+        <div id="map-progress" class="map-progress" hidden></div>
+        <p id="map-progress-label" class="map-progress-label" role="status" hidden>Finding your route</p>
         <p id="map-hint" class="map-hint" hidden></p>
         <div class="legend">
           <div class="legend-routes">
@@ -175,6 +179,16 @@
               <span>High</span>
             </div>
           </div>
+          <div id="legend-traffic" class="legend-heat" hidden>
+            <span class="legend-title">Congestion</span>
+            <div class="legend-scale">
+              <span>Low</span>
+              <span id="traffic-steps" class="legend-steps" aria-hidden="true"></span>
+              <span>High</span>
+            </div>
+          </div>
+          <label id="traffic-switch" class="switch switch-small" hidden><span>Live traffic</span><input id="traffic-toggle" type="checkbox" role="switch"></label>
+          <p id="traffic-status" class="legend-note" hidden></p>
           <p id="tile-status" class="legend-status" role="status" hidden></p>
           <p id="heat-status" class="legend-status" role="status" hidden></p>
           <button id="heat-retry" type="button" class="btn btn-small" hidden>Try again</button>
@@ -207,7 +221,7 @@
           <button id="ob-submit" type="submit" class="btn btn-primary btn-large">Continue</button>
         </div>
         <p id="ob-mic-note" class="status" hidden></p>
-        <p id="ob-status" class="status" role="status" hidden></p>
+        <p id="ob-status" class="status status-slot" role="status"></p>
         <div id="ob-error" class="notice notice-error" role="alert" hidden>
           <p id="ob-error-text"></p>
           <button id="ob-manual" type="button" class="btn btn-small">Continue without a profile</button>
@@ -236,7 +250,7 @@
           <ul id="ob-not-covered" class="ob-list"></ul>
         </div>
 
-        <p id="ob-save-status" class="status" role="status" hidden></p>
+        <p id="ob-save-status" class="status status-slot" role="status"></p>
         <p id="ob-storage-note" class="small" hidden>This browser won't remember your profile after you close it.</p>
 
         <div class="ob-actions">
@@ -247,7 +261,7 @@
     </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

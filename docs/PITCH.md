@@ -6,9 +6,9 @@
 
 **0:00 Who (20 sec).** "One in five or so of us gets hit by pollen each spring. Your maps app can't help, because it doesn't know that the London planes on Market Street are what sets you off. SF has 138,000 mapped street trees, but no data on which ones trigger allergies." *(Check this first figure or drop it: it's from memory, not our data.)*
 
-**0:20 Demo (35 sec).** Speak: "I'm allergic to sycamore and olive, and I have asthma." Show the chips: Mistral mapped sycamore to plane trees. Choose Ferry Building to Civic Center. "Planning for April, it moves me off Market Street's plane trees onto Mission Street. This walk is 89% less estimated exposure for 4.8 more minutes." *(Read the numbers on screen, since they depend on the profile and live traffic.)*
+**0:20 Demo (35 sec).** Speak: "I'm allergic to sycamore and olive, and I have asthma." Show the chips: Mistral mapped sycamore to plane trees. Choose Ferry Building to Civic Center. "Planning for April, it moves me off Market Street's plane trees, and because I have asthma, it also avoids live traffic." *(Read the percentage and minutes from the screen. They change with live traffic, and this route can add around 10 minutes, so run it first and pick another preset if that looks too long.)*
 
-**0:55 Honest number (15 sec).** "That's one of the better examples. Across 200 random walks, the median is 72% counting trees within 25 metres, but 22% within 100, for about 2 extra minutes."
+**0:55 Honest number (15 sec).** "That's one of the better examples. Across 200 random walks, the median is 72% counting trees within 25 metres, but 22% within 100, for about 2 extra minutes. For asthma, a 60-walk test on live traffic halved heavy-traffic walking, from 464 to 232 metres."
 
 **1:10 Elastic (25 sec).** Open "Show the Elastic query". "Elastic scored all 32,000 street segments against 60,000 trees with geo_shape and sum aggregations. Routes use those scores, synced from Elastic, and this live aggregation proves each result. Elastic does the math, not the LLM. Symptom search is hybrid: BM25 plus Mistral embeddings."
 

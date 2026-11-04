@@ -14,6 +14,8 @@ Tell it once what you're allergic to and whether you have asthma. It remembers, 
 | Same comparison, trees within 100 m | **21.9%** |
 | Extra walking time | **2.0 min** on a 34.5 min walk |
 
+Asthma profile on live traffic (60 random walks, plane and olive allergy, one snapshot at 6:42 PM on Nov 3): heavy-traffic walking fell from a median 464 m to 232 m, and no walk added heavy traffic or major-road distance, which the route search enforces.
+
 These are modelled exposure figures, not measured pollen or health outcomes. See `pipeline/evaluate.py` and `data/evaluation.json`.
 
 ## How it works

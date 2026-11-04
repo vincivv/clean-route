@@ -73,3 +73,10 @@ def test_coords_are_continuous_even_when_geometry_is_stored_backwards():
     coords = net.coords(["a", "b", "d"])
     assert coords[0] == net.nodes["a"] and coords[-1] == net.nodes["d"]
     assert coords[1] == net.nodes["b"]
+
+
+def test_asthma_route_never_adds_heavy_traffic():
+    net = small_net(100.0)
+    net.congestion = {"ac": 0.9, "cd": 0.9}
+    assert net.clean("a", "d", {"olive": 1.0}, True, 1.3) == ["a", "b", "d"]
+    assert net.clean("a", "d", {"olive": 1.0}, False, 1.3) == ["a", "c", "d"]

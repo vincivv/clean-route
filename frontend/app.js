@@ -6,9 +6,16 @@
   var MAX_DETOUR = 1.3;
   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
     'August', 'September', 'October', 'November', 'December'];
-  // One-hue-family sequential scale, light to dark. Green is reserved for the clean route.
+  // Sequential, light to dark. Green is reserved for the clean route.
   var HEAT_COLORS = ['#f7d9a8', '#f5c282', '#f2a65a', '#ec8a3c', '#de6a26', '#c44e1c', '#9c3614', '#6f230c'];
-  var HEAT_WEIGHTS = [1, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5];
+  var HEAT_MIN_RATIO = 0.1;
+  // Cool ramp so congestion can't be mistaken for pollen exposure.
+  var TRAFFIC_COLORS = ['#b4bdf2', '#7f86e8', '#5546d6', '#3a1fb0', '#25107a'];
+  var TRAFFIC_REFRESH = 120000;
+  var TRAFFIC_MAX_AGE = 600000;
+  var MAP_STYLE = 'https://tiles.openfreemap.org/styles/positron';
+  var OSM_CREDIT = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  var LOCATION_FAILED = "Couldn't use your location. Click the map to set a start.";
   var ROUTE_TIMEOUT = 30000;
   var VOICE_TIMEOUT = 60000;
   var RECORD_LIMIT = 30000;
@@ -18,10 +25,14 @@
   var state = {
     meta: null,
     groups: null, // null means every group
-    month: 3,
+    monthOverride: null, // null means the current month, and requests leave it out
     asthma: false,
     heatOn: true,
     start: null,
+    startIsYou: false,
+    here: null,
+    locating: false,
+    locationFailed: false,
     end: null,
     placeNames: null,
     route: null,
@@ -30,9 +41,15 @@
     profileDirty: false // true when local edits couldn't be saved to the server
   };
 
-  var map, startMarker, endMarker, heatLines = [], heatGroup, routeLayers;
+  var map = null;
+  var mapStyleReady = false;
+  var startMarker = null;
+  var endMarker = null;
+  var mapData = { heat: emptyLines(), traffic: emptyLines(), routes: emptyLines() };
   var routeTimer, heatTimer, hintTimer;
   var fitOnNextRoute = false;
+  var busy = { route: false, ask: false, heat: false };
+  var metaLoaded = Promise.resolve();
   var homeBounds = FALLBACK_BOUNDS;
   var homePending = false;
   var localExposure = false;
@@ -52,6 +69,12 @@
     node.textContent = text || '';
     node.classList.toggle('is-error', Boolean(isError));
     show(node, Boolean(text));
+  }
+
+  // For a line with its height reserved, so messages don't move what's below them.
+  function setSlot(node, text, isError) {
+    node.textContent = text || '';
+    node.classList.toggle('is-error', Boolean(isError));
   }
 
   function clearChildren(node) { node.replaceChildren(); }
@@ -146,120 +169,226 @@
   var heatChannel = newChannel();
   var askChannel = newChannel();
   var symptomChannel = newChannel();
+  var trafficChannel = newChannel();
   var profileChannel = newChannel();
 
   // ---- map ----
 
-  function initMap() {
-    map = L.map('map', { center: FALLBACK_CENTER, zoom: 13, zoomControl: false });
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
-    fitHome();
-    addTiles();
+  function emptyLines() { return { type: 'FeatureCollection', features: [] }; }
 
-    map.createPane('heat');
-    map.getPane('heat').style.zIndex = 350;
-    map.getPane('heat').style.pointerEvents = 'none';
+  function toLngLat(p) { return [p[1], p[0]]; }
 
-    // One canvas, one path per colour step: a stroke per bucket rather than per street,
-    // and no hit testing, so 20,000 segments stay smooth to pan and zoom.
-    var renderer = L.canvas({ pane: 'heat', padding: 0.25 });
-    heatGroup = L.layerGroup();
-    HEAT_COLORS.forEach(function (color, i) {
-      var line = L.polyline([], {
-        renderer: renderer,
-        pane: 'heat',
-        color: color,
-        weight: HEAT_WEIGHTS[i],
-        opacity: 0.95,
-        interactive: false,
-        smoothFactor: 1
-      });
-      heatLines.push(line);
-      heatGroup.addLayer(line);
+  function toLngLatBounds(b) {
+    return [toLngLat(b[0]), toLngLat(b[1])];
+  }
+
+  function lineFeature(coords, properties) {
+    return {
+      type: 'Feature',
+      properties: properties,
+      geometry: { type: 'LineString', coordinates: coords.map(toLngLat) }
+    };
+  }
+
+  function rampExpression(input, from, colors) {
+    var expression = ['interpolate', ['linear'], input];
+    colors.forEach(function (color, i) {
+      expression.push(from + (1 - from) * (i / (colors.length - 1)), color);
     });
-    heatGroup.addTo(map);
+    return expression;
+  }
 
-    routeLayers = L.layerGroup().addTo(map);
+  function initMap() {
+    try {
+      map = new maplibregl.Map({
+        container: 'map',
+        style: MAP_STYLE,
+        bounds: toLngLatBounds(homeBounds),
+        fitBoundsOptions: { padding: 24 },
+        attributionControl: false,
+        dragRotate: false,
+        pitchWithRotate: false,
+        renderWorldCopies: false,
+        minZoom: 10,
+        maxZoom: 19
+      });
+    } catch (e) {
+      map = null;
+      $('tile-status').textContent = "This browser can't draw the map because WebGL is off.";
+      $('tile-status').classList.add('is-error');
+      show($('tile-status'), true);
+      return;
+    }
+    map.touchZoomRotate.disableRotation();
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+    map.addControl(new maplibregl.AttributionControl({ compact: false, customAttribution: OSM_CREDIT }), 'bottom-right');
 
+    map.on('style.load', addDataLayers);
     map.on('click', onMapClick);
-    $('map').classList.add('picking');
+
+    var usedBackup = false;
+    var tileErrors = 0;
+    map.on('error', function () {
+      if (!mapStyleReady && !usedBackup) {
+        // The basemap service can't be reached: plain OSM tiles keep the demo on its feet.
+        usedBackup = true;
+        map.setStyle({
+          version: 8,
+          sources: {
+            osm: {
+              type: 'raster',
+              tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+              tileSize: 256,
+              maxzoom: 19
+            }
+          },
+          layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
+        });
+        return;
+      }
+      tileErrors += 1;
+      if (tileErrors >= 6) setStatus($('tile-status'), "Map background didn't load. Check the network.", true);
+    });
+    map.on('idle', function () {
+      if (tileErrors < 6) setStatus($('tile-status'), '');
+      tileErrors = 0;
+    });
 
     if (window.ResizeObserver) {
       new ResizeObserver(function () {
-        map.invalidateSize();
+        map.resize();
         if (homePending) fitHome();
       }).observe($('map'));
     }
+    fitHome();
   }
 
-  // A hidden tab or pane has no size, and fitting to that zooms out to the whole world.
+  // Runs on every style load, because changing style drops custom layers.
+  function addDataLayers() {
+    mapStyleReady = true;
+    var labels = map.getStyle().layers.find(function (l) { return l.type === 'symbol'; });
+    var below = labels ? labels.id : undefined;
+
+    ['heat', 'traffic', 'routes'].forEach(function (id) {
+      if (map.getSource(id)) return;
+      map.addSource(id, { type: 'geojson', data: mapData[id], tolerance: 0.5, buffer: 32, maxzoom: 15 });
+    });
+
+    // Under the labels: exposure first, then congestion beside it.
+    map.addLayer({
+      id: 'heat',
+      type: 'line',
+      source: 'heat',
+      layout: { 'line-cap': 'round', visibility: state.heatOn ? 'visible' : 'none' },
+      paint: {
+        'line-color': rampExpression(['get', 'r'], HEAT_MIN_RATIO, HEAT_COLORS),
+        'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.6, 13, 1.4, 15, 3, 18, 7],
+        'line-opacity': 0.9
+      }
+    }, below);
+    map.addLayer({
+      id: 'traffic',
+      type: 'line',
+      source: 'traffic',
+      layout: { 'line-cap': 'round', visibility: trafficVisible() ? 'visible' : 'none' },
+      paint: {
+        'line-color': rampExpression(['get', 'level'], 0, TRAFFIC_COLORS),
+        'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 13, 2, 15, 3.5, 18, 7],
+        'line-offset': ['interpolate', ['linear'], ['zoom'], 11, 0.5, 15, 3, 18, 7],
+        'line-opacity': 0.95
+      }
+    }, below);
+
+    // Over everything: the routes are the point of the page.
+    [
+      ['route-short-casing', 'shortest', '#ffffff', 8],
+      ['route-short', 'shortest', '#5b636d', 5],
+      ['route-clean-casing', 'clean', '#ffffff', 10],
+      ['route-clean', 'clean', '#0b7a3b', 7]
+    ].forEach(function (r) {
+      map.addLayer({
+        id: r[0],
+        type: 'line',
+        source: 'routes',
+        filter: ['==', ['get', 'role'], r[1]],
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': r[2], 'line-width': r[3] }
+      });
+    });
+  }
+
+  function setMapData(id, data) {
+    mapData[id] = data;
+    if (map && mapStyleReady && map.getSource(id)) map.getSource(id).setData(data);
+  }
+
+  function setLayerVisible(id, visible) {
+    if (map && mapStyleReady && map.getLayer(id)) {
+      map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
+    }
+  }
+
+  // A hidden tab or pane has no size, and fitting to that gives a useless zoom.
   // Wait for a real size before fitting.
   function fitHome() {
-    var size = map.getSize();
-    homePending = !(size.x > 0 && size.y > 0);
-    if (!homePending) map.fitBounds(homeBounds);
+    if (!map) return;
+    var box = map.getContainer();
+    homePending = !(box.clientWidth > 0 && box.clientHeight > 0);
+    if (!homePending) map.fitBounds(toLngLatBounds(homeBounds), { padding: 24, animate: false });
   }
 
-  function addTiles() {
-    var tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    var errors = 0;
-    var loaded = 0;
-    tiles.on('tileload', function () {
-      loaded += 1;
-      setStatus($('tile-status'), '');
-    });
-    tiles.on('tileerror', function () {
-      errors += 1;
-      if (errors >= 6 && loaded === 0) {
-        setStatus($('tile-status'), "Map background didn't load. Check the network.", true);
-      }
-    });
+  function fitPoints(points) {
+    if (!map || !points.length) return;
+    var bounds = new maplibregl.LngLatBounds();
+    points.forEach(function (p) { bounds.extend(toLngLat(p)); });
+    map.fitBounds(bounds, { padding: { top: 70, bottom: 50, left: 60, right: 60 }, maxZoom: 16, duration: 500 });
   }
 
-  function pinIcon(letter) {
-    return L.divIcon({
-      className: '',
-      html: '<div class="marker-pin">' + letter + '</div>', // static letter, never server text
-      iconSize: [30, 30],
-      iconAnchor: [15, 15]
-    });
+  function pinLabel(which) {
+    if (which === 'end') return 'B';
+    return state.startIsYou ? 'You' : 'A';
   }
 
   function placeMarker(which, point) {
+    if (!map) return;
     var marker = which === 'start' ? startMarker : endMarker;
     if (!point) {
-      if (marker) map.removeLayer(marker);
+      if (marker) marker.remove();
       if (which === 'start') startMarker = null; else endMarker = null;
       return;
     }
-    if (marker) {
-      marker.setLatLng(point);
-      return;
+    if (!marker) {
+      var pin = el('div', { className: 'marker-pin' });
+      marker = new maplibregl.Marker({ element: pin, anchor: 'center', draggable: true })
+        .setLngLat(toLngLat(point))
+        .addTo(map);
+      marker.on('dragend', function () {
+        var ll = marker.getLngLat();
+        setPoint(which, [ll.lat, ll.lng]);
+        forgetPlaceNames();
+        updateHint();
+        runRoute();
+      });
+      if (which === 'start') startMarker = marker; else endMarker = marker;
+    } else {
+      marker.setLngLat(toLngLat(point));
     }
-    marker = L.marker(point, {
-      icon: pinIcon(which === 'start' ? 'A' : 'B'),
-      draggable: true,
-      autoPan: true,
-      title: which === 'start' ? 'Start. Drag to move.' : 'End. Drag to move.',
-      alt: which === 'start' ? 'Start' : 'End',
-      zIndexOffset: 1000
-    }).addTo(map);
-    marker.on('dragend', function () {
-      var ll = marker.getLatLng();
-      state[which] = [ll.lat, ll.lng];
-      forgetPlaceNames();
-      runRoute();
-    });
-    if (which === 'start') startMarker = marker; else endMarker = marker;
+    var element = marker.getElement();
+    element.textContent = pinLabel(which);
+    element.classList.toggle('is-you', which === 'start' && state.startIsYou);
+    element.setAttribute('aria-label', which === 'end' ? 'End. Drag to move.' : pinLabel('start') + ' is the start. Drag to move.');
   }
 
-  function setPoint(which, point) {
+  function setPoint(which, point, isYou) {
+    if (which === 'start') state.startIsYou = Boolean(point && isYou);
     state[which] = point;
     placeMarker(which, point);
+  }
+
+  function setBusy(key, on) {
+    busy[key] = on;
+    show($('map-progress'), busy.route || busy.ask || busy.heat);
+    show($('map-progress-label'), busy.route || busy.ask);
   }
 
   function forgetPlaceNames() {
@@ -269,10 +398,15 @@
 
   function onMapClick(e) {
     if (!$('onboarding').hidden) return;
-    var point = [e.latlng.lat, e.latlng.lng];
-    if (!state.start) {
+    var target = e.originalEvent && e.originalEvent.target;
+    if (target && target.closest && target.closest('.marker-pin')) return;
+    var point = [e.lngLat.lat, e.lngLat.lng];
+    if (!state.start || state.startIsYou) {
+      // A click always beats the detected location.
       setPoint('start', point);
       forgetPlaceNames();
+      setStatus($('ask-status'), '');
+      if (state.end) runRoute();
     } else if (!state.end) {
       setPoint('end', point);
       forgetPlaceNames();
@@ -287,18 +421,19 @@
   function updateHint() {
     clearTimeout(hintTimer);
     var hint = $('map-hint');
-    $('map').classList.toggle('picking', !(state.start && state.end));
-    show($('clear-route'), Boolean(state.start || state.end));
+    $('map').classList.toggle('picking', !(state.start && state.end) || state.startIsYou);
+    show($('clear-route'), Boolean((state.start && !state.startIsYou) || state.end));
+    var text = '';
     if (!state.start) {
-      hint.textContent = 'Click the map to set your start';
-      show(hint, true);
-    } else if (!state.end) {
-      hint.textContent = 'Now click to set your end';
-      show(hint, true);
-    } else {
-      show(hint, false);
+      if (state.locating) text = 'Finding your location...';
+      else if (state.locationFailed) text = LOCATION_FAILED;
+      else text = 'Click the map to set your start';
+    } else if (!state.end && !state.startIsYou) {
+      text = 'Now click to set your end';
     }
-    show($('result-empty'), !state.route && !(state.start && state.end));
+    hint.textContent = text;
+    show(hint, Boolean(text));
+    show($('result-empty'), !state.route && $('route-error').hidden);
   }
 
   function flashHint(text) {
@@ -350,32 +485,32 @@
     syncBloomNote();
   }
 
+  function currentMonth() { return new Date().getMonth() + 1; }
+
+  function activeMonth() { return state.monthOverride || currentMonth(); }
+
   function syncBloomNote() {
     var note = $('bloom-note');
     var groups = (state.meta && state.meta.groups) || [];
     if (!groups.length) { note.textContent = ''; return; }
-    var month = MONTHS[state.month - 1];
+    var month = activeMonth();
+    var when = state.monthOverride ? ' in ' + MONTHS[month - 1] : '';
     var mine = state.groups
       ? groups.filter(function (g) { return state.groups.indexOf(g.id) >= 0; })
       : groups;
     var inBloom = mine.filter(function (g) {
-      return Array.isArray(g.bloom_months) && g.bloom_months.indexOf(state.month) >= 0;
+      return Array.isArray(g.bloom_months) && g.bloom_months.indexOf(month) >= 0;
     }).map(function (g) { return g.label; });
     if (inBloom.length) {
-      note.textContent = (state.groups ? 'Your trees in bloom in ' : 'In bloom in ') + month + ': ' + inBloom.join(', ');
+      note.textContent = (state.monthOverride ? 'In bloom' + when : 'In bloom now') + ': ' + inBloom.join(', ');
     } else {
-      note.textContent = state.groups
-        ? 'None of your trees are listed in bloom in ' + month + '.'
-        : 'Nothing listed in bloom in ' + month + '.';
+      note.textContent = (state.groups ? 'None of your trees are in season' : 'No listed trees are in season') + when;
     }
   }
 
   function syncMonth() {
-    var slider = $('month');
-    slider.value = String(state.month);
-    var name = MONTHS[state.month - 1];
-    $('month-value').textContent = name;
-    slider.setAttribute('aria-valuetext', name);
+    $('month-value').textContent = MONTHS[activeMonth() - 1];
+    show($('month-tag'), Boolean(state.monthOverride));
     syncBloomNote();
   }
 
@@ -408,29 +543,56 @@
   }
 
   function bindControls() {
-    $('month').addEventListener('input', function (e) {
-      state.month = Number(e.target.value);
+    var select = $('month-select');
+    MONTHS.forEach(function (name, i) {
+      var opt = el('option', { text: name });
+      opt.value = String(i + 1);
+      select.appendChild(opt);
+    });
+    $('month-plan').addEventListener('click', function () {
+      select.value = String(activeMonth());
+      show($('month-plan'), false);
+      show($('month-picker'), true);
+      select.focus();
+    });
+    select.addEventListener('change', function () {
+      var chosen = Number(select.value);
+      state.monthOverride = chosen === currentMonth() ? null : chosen;
       syncMonth();
       controlsChanged();
     });
+    $('month-today').addEventListener('click', function () {
+      var changed = state.monthOverride !== null;
+      state.monthOverride = null;
+      show($('month-picker'), false);
+      show($('month-plan'), true);
+      syncMonth();
+      if (changed) controlsChanged();
+      $('month-plan').focus();
+    });
     $('asthma').addEventListener('change', function (e) {
       state.asthma = e.target.checked;
+      syncTraffic();
       controlsChanged();
     });
     $('heat-toggle').addEventListener('change', function (e) {
       state.heatOn = e.target.checked;
+      setLayerVisible('heat', state.heatOn);
+      show($('legend-heat'), state.heatOn);
       if (state.heatOn) {
-        heatGroup.addTo(map);
-        show($('legend-heat'), true);
         scheduleHeat(0);
       } else {
         clearTimeout(heatTimer);
         cancel(heatChannel);
-        map.removeLayer(heatGroup);
-        show($('legend-heat'), false);
+        setBusy('heat', false);
         setStatus($('heat-status'), '');
         show($('heat-retry'), false);
       }
+    });
+    $('traffic-toggle').addEventListener('change', function (e) {
+      trafficTouched = true;
+      trafficOn = e.target.checked;
+      syncTraffic();
     });
     $('preset').addEventListener('change', function (e) {
       if (e.target.value === '') return;
@@ -440,6 +602,7 @@
       setPoint('start', preset.start);
       setPoint('end', preset.end);
       state.placeNames = preset.name;
+      setStatus($('ask-status'), '');
       updateHint();
       fitOnNextRoute = true;
       runRoute();
@@ -460,9 +623,10 @@
   }
 
   function clearWalk() {
-    setPoint('start', null);
+    setPoint('start', state.here, Boolean(state.here));
     setPoint('end', null);
     forgetPlaceNames();
+    setStatus($('ask-status'), '');
     clearRouteResult();
     updateHint();
   }
@@ -471,15 +635,23 @@
   function clearRouteResult() {
     clearTimeout(routeTimer);
     cancel(routeChannel);
+    setBusy('route', false);
     state.route = null;
-    routeLayers.clearLayers();
+    setMapData('routes', emptyLines());
     show($('hero'), false);
+    $('hero').classList.remove('is-stale');
     show($('details'), false);
     show($('route-error'), false);
-    setStatus($('route-status'), '');
     localExposure = false;
     renderBadges();
     updateHint();
+  }
+
+  function showRouteError(message) {
+    clearRouteResult();
+    $('route-error-text').textContent = message;
+    show($('route-error'), true);
+    show($('result-empty'), false);
   }
 
   async function runRoute() {
@@ -490,8 +662,7 @@
     var context = describeRequest();
 
     show($('route-error'), false);
-    show($('result-empty'), false);
-    setStatus($('route-status'), 'Finding routes...');
+    setBusy('route', true);
     $('hero').classList.add('is-stale');
     $('result').setAttribute('aria-busy', 'true');
 
@@ -500,24 +671,18 @@
       data = await latest(routeChannel, '/api/route', jsonPost(request), ROUTE_TIMEOUT);
     } catch (e) {
       // Never leave old numbers on screen for settings they don't describe.
-      clearRouteResult();
-      show($('result-empty'), false);
-      $('route-error-text').textContent = 'Route failed: ' + e.message;
-      show($('route-error'), true);
       $('result').removeAttribute('aria-busy');
+      showRouteError(e.status === 400 ? e.message : 'Route failed: ' + e.message);
       return;
     }
     if (data === STALE) return;
 
     $('result').removeAttribute('aria-busy');
-    setStatus($('route-status'), '');
+    setBusy('route', false);
     $('hero').classList.remove('is-stale');
 
     if (!data || !data.shortest || !data.clean || !Array.isArray(data.clean.coords)) {
-      clearRouteResult();
-      show($('result-empty'), false);
-      $('route-error-text').textContent = 'Route failed: the server response was incomplete.';
-      show($('route-error'), true);
+      showRouteError('Route failed: the server response was incomplete.');
       return;
     }
 
@@ -532,9 +697,9 @@
     var request = {
       start: state.start,
       end: state.end,
-      month: state.month,
       max_detour: MAX_DETOUR
     };
+    if (state.monthOverride) request.month = state.monthOverride;
     if (state.profile) {
       // The server applies the saved profile. Explicit values override it, so send
       // them only when the server's copy is behind, or when no trees are picked.
@@ -555,36 +720,22 @@
   function describeRequest() {
     var parts = [];
     if (state.placeNames) parts.push(state.placeNames);
-    parts.push(MONTHS[state.month - 1]);
+    parts.push(MONTHS[activeMonth() - 1]);
     parts.push(groupsLabel());
     if (state.asthma) parts.push('Asthma on');
     return parts.join('. ') + '.';
   }
 
   function drawRoutes(data) {
-    routeLayers.clearLayers();
     var shortest = data.shortest.coords || [];
     var clean = data.clean.coords || [];
-    [
-      { coords: shortest, color: '#ffffff', weight: 8, opacity: 0.9 },
-      { coords: shortest, color: '#5b636d', weight: 5, opacity: 1 },
-      { coords: clean, color: '#ffffff', weight: 10, opacity: 0.95 },
-      { coords: clean, color: '#0b7a3b', weight: 7, opacity: 1 }
-    ].forEach(function (s) {
-      if (s.coords.length < 2) return;
-      routeLayers.addLayer(L.polyline(s.coords, {
-        color: s.color,
-        weight: s.weight,
-        opacity: s.opacity,
-        interactive: false,
-        lineCap: 'round',
-        lineJoin: 'round'
-      }));
-    });
+    var routes = emptyLines();
+    if (shortest.length > 1) routes.features.push(lineFeature(shortest, { role: 'shortest' }));
+    if (clean.length > 1) routes.features.push(lineFeature(clean, { role: 'clean' }));
+    setMapData('routes', routes);
     if (fitOnNextRoute) {
       fitOnNextRoute = false;
-      var pts = shortest.concat(clean);
-      if (pts.length) map.fitBounds(L.latLngBounds(pts), { padding: [60, 60] });
+      fitPoints(shortest.concat(clean));
     }
   }
 
@@ -613,10 +764,23 @@
       $('hero-time').textContent = extraTimeText(summary.extra_minutes);
       var wide = summary.reduction_within_100m_pct;
       $('hero-wide').textContent = !airOnly && isNum(wide) ? Math.round(wide) + '% if we count trees within 100 m' : '';
+
+      // Out of season the percentage is a share of almost nothing, so it can't be the headline.
+      var offSeason = !airOnly && Array.isArray(summary.in_season) && summary.in_season.length === 0;
+      show($('hero-pct-value').parentNode, !offSeason);
+      show($('hero-pct-label'), !offSeason);
+      show($('hero-wide'), !offSeason);
+      show($('hero-off-title'), offSeason);
+      show($('hero-off-detail'), offSeason);
+      if (offSeason) {
+        $('hero-off-title').textContent = 'None of your trees are in season '
+          + (state.monthOverride ? 'in ' + MONTHS[activeMonth() - 1] : 'this month');
+        $('hero-off-detail').textContent = 'When they are, this route has ' + pct + '% less exposure';
+      }
     }
     $('hero-context').textContent = context;
 
-    renderCompare(data.shortest, data.clean);
+    renderCompare(data.shortest, data.clean, data.traffic_live === true);
     renderSpecies($('species-short'), data.shortest.top_species);
     renderSpecies($('species-clean'), data.clean.top_species);
 
@@ -642,7 +806,7 @@
     return 'No extra time';
   }
 
-  function renderCompare(shortest, clean) {
+  function renderCompare(shortest, clean, trafficLive) {
     var rows = [
       ['Minutes', fmt(shortest.minutes, 1), fmt(clean.minutes, 1)],
       ['Exposure', fmt(shortest.exposure), fmt(clean.exposure)],
@@ -650,6 +814,9 @@
       ['Major road share', fmtShare(shortest.major_road_share), fmtShare(clean.major_road_share)],
       ['Pollution zone share', fmtShare(shortest.pollution_zone_share), fmtShare(clean.pollution_zone_share)]
     ];
+    if (trafficLive) {
+      rows.push(['Time in heavy traffic', fmtShare(shortest.congested_share), fmtShare(clean.congested_share)]);
+    }
     var body = $('compare-body');
     clearChildren(body);
     rows.forEach(function (r) {
@@ -694,88 +861,235 @@
   async function loadHeat() {
     if (!state.heatOn) return;
     var params = new URLSearchParams();
-    params.set('month', String(state.month));
+    if (state.monthOverride) params.set('month', String(state.monthOverride));
     if (state.groups) params.set('groups', state.groups.join(','));
     params.set('asthma', state.asthma ? 'true' : 'false');
 
     show($('heat-retry'), false);
-    setStatus($('heat-status'), 'Updating street layer...');
+    setBusy('heat', true);
 
     var data;
     try {
       data = await latest(heatChannel, '/api/segments?' + params.toString(), {}, ROUTE_TIMEOUT);
     } catch (e) {
       // Drop old colours: they describe different settings.
-      heatLines.forEach(function (line) { line.setLatLngs([]); });
+      setBusy('heat', false);
+      setMapData('heat', emptyLines());
       setStatus($('heat-status'), 'Street layer failed: ' + e.message, true);
       show($('heat-retry'), true);
       return;
     }
     if (data === STALE) return;
+    setBusy('heat', false);
 
     var segments = Array.isArray(data.segments) ? data.segments : [];
-    var hottest = drawHeat(segments, data.max);
-    if (!segments.length) {
-      setStatus($('heat-status'), 'No street data for these settings.');
-    } else if (hottest <= 0) {
-      setStatus($('heat-status'), 'No estimated exposure on any street for these settings.');
-    } else {
-      setStatus($('heat-status'), '');
-    }
+    var drawn = drawHeat(segments, data.max);
+    setStatus($('heat-status'), drawn ? '' : 'No estimated exposure on any street for these settings.');
   }
 
   function drawHeat(segments, max) {
-    var steps = HEAT_COLORS.length;
-    var buckets = HEAT_COLORS.map(function () { return []; });
     var scale = isNum(max) && max > 0 ? max : 0;
-    var hottest = 0;
-    for (var i = 0; i < segments.length; i++) {
-      var seg = segments[i];
-      if (!seg || !Array.isArray(seg.c) || seg.c.length < 2) continue;
-      var e = isNum(seg.e) ? seg.e : 0;
-      if (e > hottest) hottest = e;
-      var ratio = scale ? Math.min(e / scale, 1) : 0;
-      var step = Math.min(Math.floor(ratio * steps), steps - 1);
-      buckets[Math.max(step, 0)].push(seg.c);
+    var heat = emptyLines();
+    if (scale) {
+      for (var i = 0; i < segments.length; i++) {
+        var seg = segments[i];
+        if (!seg || !Array.isArray(seg.c) || seg.c.length < 2 || !isNum(seg.e)) continue;
+        var ratio = Math.min(seg.e / scale, 1);
+        if (ratio < HEAT_MIN_RATIO) continue;
+        heat.features.push(lineFeature(seg.c, { r: Math.round(ratio * 100) / 100 }));
+      }
     }
-    heatLines.forEach(function (line, n) { line.setLatLngs(buckets[n]); });
-    return hottest;
+    setMapData('heat', heat);
+    return heat.features.length;
+  }
+
+  // ---- traffic layer ----
+
+  var trafficLive = false;
+  var trafficOn = false;
+  var trafficTouched = false;
+  var trafficFetchedAt = 0;
+
+  function trafficVisible() { return trafficLive && trafficOn; }
+
+  // Off the page entirely unless the feed is live. On by default for people with asthma.
+  function syncTraffic() {
+    if (!trafficTouched) trafficOn = state.asthma;
+    $('traffic-toggle').checked = trafficOn;
+    show($('traffic-switch'), trafficLive);
+    show($('legend-traffic'), trafficVisible());
+    show($('traffic-status'), trafficLive);
+    setLayerVisible('traffic', trafficVisible());
+  }
+
+  function trafficClock(iso) {
+    var when = new Date(iso);
+    if (!iso || isNaN(when.getTime())) return '';
+    return when.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' });
+  }
+
+  function endTraffic() {
+    trafficLive = false;
+    setMapData('traffic', emptyLines());
+    syncTraffic();
+  }
+
+  async function loadTraffic() {
+    var data;
+    try {
+      data = await latest(trafficChannel, '/api/traffic', {}, ROUTE_TIMEOUT);
+    } catch (_) {
+      // The timestamp stays honest through a blip. After that, say nothing about traffic.
+      if (Date.now() - trafficFetchedAt > TRAFFIC_MAX_AGE) endTraffic();
+      return;
+    }
+    if (data === STALE) return;
+    if (data.live !== true) {
+      endTraffic();
+      return;
+    }
+    trafficLive = true;
+    trafficFetchedAt = Date.now();
+    var traffic = emptyLines();
+    (Array.isArray(data.segments) ? data.segments : []).forEach(function (seg) {
+      if (!seg || !Array.isArray(seg.c) || seg.c.length < 2 || !isNum(seg.level)) return;
+      traffic.features.push(lineFeature(seg.c, { level: Math.max(0, Math.min(seg.level, 1)) }));
+    });
+    setMapData('traffic', traffic);
+    var clock = trafficClock(data.updated);
+    $('traffic-status').textContent = (clock ? 'Traffic updated ' + clock : 'Traffic') + (data.source ? ' \u00b7 ' + data.source : '');
+    syncTraffic();
   }
 
   function renderLegendSteps() {
-    var box = $('legend-steps');
-    HEAT_COLORS.forEach(function (color) {
-      var step = el('span');
-      step.style.background = color;
-      box.appendChild(step);
+    [[$('legend-steps'), HEAT_COLORS], [$('traffic-steps'), TRAFFIC_COLORS]].forEach(function (pair) {
+      pair[1].forEach(function (color) {
+        var step = el('span');
+        step.style.background = color;
+        pair[0].appendChild(step);
+      });
     });
+  }
+
+  // ---- current location ----
+
+  var locationAsked = false;
+
+  function insideCoverage(p) {
+    var b = homeBounds;
+    return p[0] >= b[0][0] && p[0] <= b[1][0] && p[1] >= b[0][1] && p[1] <= b[1][1];
+  }
+
+  function locationFailed() {
+    state.locating = false;
+    state.here = null;
+    state.locationFailed = true;
+    if (state.end && !state.start) setStatus($('ask-status'), LOCATION_FAILED, true);
+    updateHint();
+  }
+
+  function requestLocation() {
+    if (locationAsked) return;
+    locationAsked = true;
+    if (!navigator.geolocation) {
+      locationFailed();
+      return;
+    }
+    state.locating = true;
+    updateHint();
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      var point = [pos.coords.latitude, pos.coords.longitude];
+      // Coverage comes from /api/meta, so wait for it before judging the position.
+      metaLoaded.then(function () {
+        if (!insideCoverage(point)) {
+          locationFailed();
+          return;
+        }
+        state.locating = false;
+        state.here = point;
+        if (!state.start) {
+          setPoint('start', point, true);
+          setStatus($('ask-status'), '');
+          if (state.end) {
+            fitOnNextRoute = true;
+            runRoute();
+          }
+        }
+        updateHint();
+      });
+    }, locationFailed, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 });
+  }
+
+  function noStartMessage() {
+    return state.locating ? 'Finding your location...' : LOCATION_FAILED;
   }
 
   // ---- voice and text ----
 
-  function setAskBusy(text) {
-    setStatus($('ask-status'), text);
-    $('ask-submit').disabled = Boolean(text);
+  function setAskBusy(on) {
+    if (on) setStatus($('ask-status'), '');
+    setBusy('ask', Boolean(on));
+    $('ask-submit').disabled = Boolean(on);
   }
 
-  async function sendAsk(path, opts, timeout, busyText) {
-    setAskBusy(busyText);
+  async function sendAsk(path, opts, timeout) {
+    setAskBusy(true);
     var data;
     try {
       data = await latest(askChannel, path, opts, timeout);
     } catch (e) {
-      $('ask-submit').disabled = false;
+      setAskBusy(false);
       setStatus($('ask-status'), "Couldn't read that: " + e.message + ' The controls and map still work.', true);
       return;
     }
     if (data === STALE) return;
-    $('ask-submit').disabled = false;
+    setAskBusy(false);
     applyParsed(data);
   }
 
-  function defaultStart() {
-    var presets = (state.meta && state.meta.presets) || [];
-    return presets[0] && isPoint(presets[0].start) ? presets[0].start : null;
+  async function sendDestination(text) {
+    setAskBusy(true);
+    show($('transcript'), false);
+    var data;
+    try {
+      data = await latest(askChannel, '/api/geocode', jsonPost({ text: text }), ROUTE_TIMEOUT);
+      if (data !== STALE && !isPoint(data.point)) throw new Error('the server response was incomplete.');
+    } catch (e) {
+      // A sentence such as "from X to Y" isn't a place name, so it gets a second reading.
+      if (e.status === 404 && text.split(/\s+/).length >= 4) {
+        tryAsSentence(text, e.message);
+        return;
+      }
+      setAskBusy(false);
+      setStatus($('ask-status'), e.status === 404 ? e.message : "Couldn't look that up: " + e.message, true);
+      return;
+    }
+    if (data === STALE) return;
+    setAskBusy(false);
+
+    setPoint('end', data.point);
+    state.placeNames = 'To ' + (data.name || text);
+    $('preset').value = '';
+    updateHint();
+    if (!state.start) {
+      setStatus($('ask-status'), noStartMessage(), !state.locating);
+      return;
+    }
+    fitOnNextRoute = true;
+    runRoute();
+  }
+
+  async function tryAsSentence(text, notFound) {
+    var data = null;
+    try {
+      data = await latest(askChannel, '/api/parse', jsonPost({ text: text }), ROUTE_TIMEOUT);
+    } catch (_) {
+      data = null;
+    }
+    if (data === STALE) return;
+    setAskBusy(false);
+    if (data && (isPoint(data.start) || isPoint(data.end))) applyParsed(data);
+    else setStatus($('ask-status'), notFound, true);
   }
 
   function applyParsed(data) {
@@ -826,11 +1140,8 @@
       }
     });
 
-    // Asked for a destination only, so walk from the default point. Pin A shows where that is.
-    if (isPoint(data.end) && !state.start && !data.start_text && defaultStart()) {
-      setPoint('start', defaultStart());
-      notes.push('Starting from pin A. Drag it to change.');
-    }
+    // Asked for a destination only: the walk starts from You, and never from a guess.
+    if (isPoint(data.end) && !state.start) problems.push(noStartMessage());
 
     if (moved) {
       var hasStart = data.start_text && isPoint(data.start);
@@ -844,11 +1155,10 @@
     if (!(state.start && state.end)) {
       clearRouteResult();
       if (!problems.length) {
-        problems.push(state.start ? 'Click the map to set the end.' : "We didn't catch a place. Try again, or click the map.");
+        problems.push(state.start ? 'Say or type a destination, or click the map.' : "We didn't catch a place. Try again, or click the map.");
       }
     }
 
-    setAskBusy('');
     if (problems.length) setStatus($('ask-status'), problems.concat(notes).join(' '), true);
     else if (notes.length) setStatus($('ask-status'), notes.join(' '));
 
@@ -870,7 +1180,7 @@
         input.focus();
         return;
       }
-      sendAsk('/api/parse', jsonPost({ text: text }), ROUTE_TIMEOUT, 'Finding that place...');
+      sendDestination(text);
     });
     makeMic({
       button: $('mic'),
@@ -879,7 +1189,7 @@
       onAudio: function (blob, filename) {
         var form = new FormData();
         form.append('file', blob, filename);
-        sendAsk('/api/voice', { method: 'POST', body: form }, VOICE_TIMEOUT, 'Listening back to what you said...');
+        sendAsk('/api/voice', { method: 'POST', body: form }, VOICE_TIMEOUT);
       }
     });
   }
@@ -1010,6 +1320,7 @@
     $('asthma').checked = state.asthma;
     syncChips();
     syncMode();
+    syncTraffic();
   }
 
   function syncMode() {
@@ -1073,10 +1384,12 @@
   function closeScreen() {
     show($('onboarding'), false);
     $('app').inert = false;
-    map.invalidateSize();
+    if (map) map.resize();
     syncMode();
+    syncTraffic();
     scheduleHeat(0);
     scheduleRoute(0);
+    requestLocation();
     $('ask-input').focus();
   }
 
@@ -1084,7 +1397,7 @@
     show($('ob-ask'), true);
     show($('ob-confirm'), false);
     show($('ob-error'), false);
-    setStatus($('ob-status'), message || '', Boolean(message));
+    setSlot($('ob-status'), message || '', Boolean(message));
     openScreen();
     $('ob-name').focus();
   }
@@ -1099,7 +1412,7 @@
     $('ob-done').textContent = isNew ? 'Looks right, show the map' : 'Done';
     show($('ob-heard'), Boolean(heard));
     $('ob-heard').textContent = heard ? 'You said: "' + heard + '"' : '';
-    setStatus($('ob-save-status'), state.profileDirty ? "These changes aren't saved yet." : '', state.profileDirty);
+    setSlot($('ob-save-status'), state.profileDirty ? "These changes aren't saved yet." : '', state.profileDirty);
     show($('ob-storage-note'), !storageWorks);
     renderConfirm();
     openScreen();
@@ -1146,7 +1459,7 @@
 
   function schedulePut() {
     clearTimeout(putTimer);
-    setStatus($('ob-save-status'), 'Saving...');
+    setSlot($('ob-save-status'), 'Saving...');
     putTimer = setTimeout(function () {
       putTimer = null;
       putProfile();
@@ -1165,7 +1478,7 @@
       } catch (e) {
         state.profileDirty = true;
         renderProfileSummary();
-        setStatus($('ob-save-status'), "Couldn't save: " + e.message + ' Your changes still apply to this visit.', true);
+        setSlot($('ob-save-status'), "Couldn't save: " + e.message + ' Your changes still apply to this visit.', true);
         return false;
       }
       if (data === STALE) return true;
@@ -1174,7 +1487,7 @@
         adoptProfile(data);
         renderConfirm();
       }
-      setStatus($('ob-save-status'), putTimer ? 'Saving...' : 'Saved');
+      setSlot($('ob-save-status'), putTimer ? 'Saving...' : 'Saved');
       return true;
     })();
     putInFlight = run;
@@ -1198,7 +1511,7 @@
 
   async function submitRegistration(path, opts, timeout, busyText) {
     show($('ob-error'), false);
-    setStatus($('ob-status'), busyText);
+    setSlot($('ob-status'), busyText);
     $('ob-submit').disabled = true;
     var data;
     try {
@@ -1206,14 +1519,14 @@
       if (data !== STALE && !isProfile(data)) throw new Error('the server response was incomplete.');
     } catch (e) {
       $('ob-submit').disabled = false;
-      setStatus($('ob-status'), '');
+      setSlot($('ob-status'), '');
       $('ob-error-text').textContent = "Couldn't save your profile: " + e.message;
       show($('ob-error'), true);
       return;
     }
     if (data === STALE) return;
     $('ob-submit').disabled = false;
-    setStatus($('ob-status'), '');
+    setSlot($('ob-status'), '');
     storeSet(data.profile_id);
     show($('profile-error'), false);
     state.profileDirty = false;
@@ -1224,7 +1537,7 @@
   function requireName() {
     var name = $('ob-name').value.trim();
     if (name) return name;
-    setStatus($('ob-status'), 'Add your name first.', true);
+    setSlot($('ob-status'), 'Add your name first.', true);
     $('ob-name').focus();
     return null;
   }
@@ -1236,7 +1549,7 @@
       if (!name) return;
       var text = $('ob-text').value.trim();
       if (!text) {
-        setStatus($('ob-status'), 'Tell us what you are allergic to, or press Speak.', true);
+        setSlot($('ob-status'), 'Tell us what you are allergic to, or press Speak.', true);
         $('ob-text').focus();
         return;
       }
@@ -1303,21 +1616,25 @@
   }
 
   async function runSymptoms(text) {
-    var payload = { text: text, month: state.month };
+    var payload = { text: text };
+    if (state.monthOverride) payload.month = state.monthOverride;
     var cleanCoords = state.route && state.route.clean && state.route.clean.coords;
     if (cleanCoords && cleanCoords.length) payload.coords = cleanCoords;
 
-    setStatus($('symptom-status'), 'Searching tree records...');
+    setStatus($('symptom-status'), '');
+    $('symptom-submit').disabled = true;
     var data;
     try {
       data = await latest(symptomChannel, '/api/symptoms', jsonPost(payload), ROUTE_TIMEOUT);
     } catch (e) {
+      $('symptom-submit').disabled = false;
       clearChildren($('symptom-results'));
       show($('symptom-note'), false);
       setStatus($('symptom-status'), 'Symptom search failed: ' + e.message, true);
       return;
     }
     if (data === STALE) return;
+    $('symptom-submit').disabled = false;
     setStatus($('symptom-status'), '');
     renderSymptoms(data, Boolean(payload.coords));
   }
@@ -1390,9 +1707,9 @@
       syncMonth();
       renderProfileSummary();
       if (!$('ob-confirm').hidden) renderConfirm();
-      if (Array.isArray(meta.bounds) && isPoint(meta.bounds[0]) && isPoint(meta.bounds[1]) && !state.route) {
+      if (Array.isArray(meta.bounds) && isPoint(meta.bounds[0]) && isPoint(meta.bounds[1])) {
         homeBounds = meta.bounds;
-        fitHome();
+        if (!state.route) fitHome();
       }
     } catch (e) {
       $('meta-error-text').textContent = "Couldn't load allergen data: " + e.message;
@@ -1403,7 +1720,7 @@
   // ---- start ----
 
   function boot() {
-    if (!window.L) {
+    if (!window.maplibregl) {
       $('meta-error-text').textContent = "The map library didn't load. Check the network connection and reload.";
       $('meta-retry').hidden = true;
       show($('meta-error'), true);
@@ -1418,13 +1735,16 @@
     bindProfile();
     bindSymptoms();
     updateHint();
-    loadMeta();
+    metaLoaded = loadMeta();
     loadAir();
     setInterval(loadAir, 600000);
+    loadTraffic();
+    setInterval(loadTraffic, TRAFFIC_REFRESH);
 
     var savedId = storeGet();
     if (savedId) {
       loadProfile(savedId);
+      requestLocation();
     } else {
       syncMode();
       openRegister();
