@@ -38,7 +38,7 @@ These are modelled exposure figures, not measured pollen or health outcomes. See
 | Route search | Elastic, then Dijkstra | Street scores are synced from Elastic into memory every 10 minutes, so a search takes under a second. Dijkstra runs at 12 exposure prices, and we keep the shortest detour that gets 80% of the best saving, up to 30% longer. |
 | Live traffic (asthma) | TomTom, Elastic | Every 5 minutes, live congestion is matched onto walking streets and stored in Elastic. Each sidewalk also inherits the class of the road beside it. |
 | Route proof | Elastic | A live aggregation sums distinct trees around each finished route. Elastic does the math, not the LLM. |
-| Hotspot circles | Elastic | `geotile_grid` + `geo_centroid` + `sum` aggregations draw allergenic trees and traffic as circles, scaled by what's in season for this person. |
+| Hotspot circles | Elastic | `geotile_grid` + `geo_centroid` + `sum` aggregations at one fixed grid size draw allergenic trees by block. Colour shows the block's pollen load for this person, and out-of-season blocks fade. Heavy traffic is drawn on the streets from TomTom. |
 | Place search | Elastic | 57,293 OSM places, addresses and streets with `search_as_you_type`, fuzzy matching and a distance boost, plus street intersections. |
 | Symptom search | Elastic + `mistral-embed` | Hybrid search (RRF over BM25 and `semantic_text`) suggests likely triggers, labelled as not a diagnosis. |
 

@@ -12,6 +12,7 @@
   // Dim yellow, through orange, to saturated red. Trees fill these circles; traffic rings them.
   var HOTSPOT_COLORS = ['#f4d83e', '#ffb224', '#ff7a1a', '#ff4a1c', '#ff1f1f'];
   var HOT_LEVEL = 0.6;
+  var TRAFFIC_MIN = 0.4;
   var TRAFFIC_REFRESH = 120000;
   var TRAFFIC_MAX_AGE = 600000;
   var MAP_STYLE = 'https://tiles.openfreemap.org/styles/dark';
@@ -193,11 +194,12 @@
     };
   }
 
-  function sized(small, large) {
-    function atZoom(factor) {
-      return ['interpolate', ['linear'], ['get', 's'], 0, small * factor, 1, large * factor];
-    }
-    return ['interpolate', ['linear'], ['zoom'], 11, atZoom(0.65), 13, atZoom(1), 15, atZoom(1.4), 18, atZoom(2.2)];
+  // MapLibre circle radii are pixels. At this latitude one pixel is 61,880 / 2^zoom metres.
+  function metres(scale) {
+    var radius = ['*', ['get', 'r'], scale];
+    return ['interpolate', ['exponential', 2], ['zoom'],
+      10, ['*', radius, 1024 / 61880],
+      20, ['*', radius, 1048576 / 61880]];
   }
 
   function rampExpression(input, from, colors) {
@@ -235,9 +237,6 @@
 
     map.on('style.load', addDataLayers);
     map.on('click', onMapClick);
-    map.on('zoomend', function () {
-      if (Math.floor(map.getZoom()) !== hotspotZoom) scheduleHotspots(200);
-    });
 
     var usedBackup = false;
     var tileErrors = 0;
@@ -358,38 +357,34 @@
     var color = rampExpression(['get', 'level'], 0, HOTSPOT_COLORS);
     var isHot = ['>=', ['get', 'level'], HOT_LEVEL];
 
-    // Trees are filled. Hot cells also get a soft halo and a thin outer ring.
+    // Circles are sized in metres, so a block covers the same ground at every zoom.
+    // Out-of-season blocks keep their colour but fade.
     addCircleLayer('trees-halo', 'hotTrees', {
-      'circle-radius': sized(16, 42), 'circle-color': color, 'circle-opacity': 0.14, 'circle-blur': 0.35
-    }, isHot, below);
-    addCircleLayer('trees-ring', 'hotTrees', {
-      'circle-radius': sized(16, 42), 'circle-opacity': 0,
-      'circle-stroke-width': 1, 'circle-stroke-color': color, 'circle-stroke-opacity': 0.5
-    }, isHot, below);
-    addCircleLayer('trees-glow', 'hotTrees', {
-      'circle-radius': sized(8, 22), 'circle-color': color, 'circle-opacity': 0.55, 'circle-blur': 1
+      'circle-radius': metres(1.5), 'circle-color': color, 'circle-opacity': 0.12, 'circle-blur': 0.6
     }, isHot, below);
     addCircleLayer('trees-core', 'hotTrees', {
-      'circle-radius': sized(2, 9),
+      'circle-radius': metres(1),
       'circle-color': color,
-      'circle-opacity': ['interpolate', ['linear'], ['get', 'level'], 0, 0.4, HOT_LEVEL, 0.9, 1, 1],
-      'circle-blur': 0.15
+      'circle-opacity': ['interpolate', ['linear'], ['get', 'season'], 0, 0.42, 1, 0.8],
+      'circle-stroke-width': 1,
+      'circle-stroke-color': color,
+      'circle-stroke-opacity': ['interpolate', ['linear'], ['get', 'season'], 0, 0.5, 1, 0.95]
     }, null, below);
 
-    // Traffic is rings with a clear middle, on the same colour scale.
-    addCircleLayer('traffic-halo', 'hotTraffic', {
-      'circle-radius': sized(14, 34), 'circle-color': color, 'circle-opacity': 0.12, 'circle-blur': 0.7
-    }, isHot, below);
-    addCircleLayer('traffic-outer', 'hotTraffic', {
-      'circle-radius': sized(20, 44), 'circle-opacity': 0,
-      'circle-stroke-width': 1, 'circle-stroke-color': color, 'circle-stroke-opacity': 0.45
-    }, isHot, below);
-    addCircleLayer('traffic-ring', 'hotTraffic', {
-      'circle-radius': sized(2.5, 11), 'circle-opacity': 0,
-      'circle-stroke-width': ['interpolate', ['linear'], ['get', 'level'], 0, 1, HOT_LEVEL, 1.5, 1, 2.75],
-      'circle-stroke-color': color,
-      'circle-stroke-opacity': ['interpolate', ['linear'], ['get', 'level'], 0.25, 0.3, HOT_LEVEL, 0.85, 1, 1]
-    }, null, below);
+    // Slow traffic is drawn on the streets themselves, on the same colour scale.
+    map.addLayer({
+      id: 'traffic-lines',
+      type: 'line',
+      source: 'hotTraffic',
+      // Same bar as "heavy traffic" in the route numbers. Lighter slowdowns are mostly traffic lights.
+      filter: ['>=', ['get', 'level'], TRAFFIC_MIN],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': rampExpression(['get', 'level'], TRAFFIC_MIN, HOTSPOT_COLORS),
+        'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 13, 2.2, 15, 4, 18, 9],
+        'line-opacity': 0.95
+      }
+    }, below);
 
     syncHotspotLayers();
 
@@ -1125,15 +1120,13 @@
     trafficClockText = trafficClock(data.updated);
     trafficSource = data.source || '';
     $('traffic-status').textContent = (trafficClockText ? 'Traffic updated ' + trafficClockText : 'Traffic') + (trafficSource ? ' \u00b7 ' + trafficSource : '');
+    setMapData('hotTraffic', trafficFeatures(data.segments));
     syncTraffic();
-    if (trafficVisible()) loadHotspots('traffic');
   }
 
   // ---- hotspot circles ----
 
-  var hotspotChannels = { trees: newChannel(), traffic: newChannel() };
-  var hotspotErrors = { trees: '', traffic: '' };
-  var hotspotZoom = null;
+  var hotspotChannel = newChannel();
   var hotspotTimer = null;
 
   function setLayersVisible(ids, visible) {
@@ -1141,30 +1134,41 @@
   }
 
   function syncHotspotLayers() {
-    setLayersVisible(['trees-halo', 'trees-ring', 'trees-glow', 'trees-core'], state.treesOn);
-    setLayersVisible(['traffic-halo', 'traffic-outer', 'traffic-ring'], trafficVisible());
+    setLayersVisible(['trees-halo', 'trees-core'], state.treesOn);
+    setLayersVisible(['traffic-lines'], trafficVisible());
   }
 
   function scheduleHotspots(delay) {
     clearTimeout(hotspotTimer);
     hotspotTimer = setTimeout(function () {
-      if (state.treesOn) loadHotspots('trees');
-      if (trafficVisible()) loadHotspots('traffic');
+      if (state.treesOn) loadHotspots();
     }, delay);
   }
 
-  function hotspotFeatures(cells) {
-    var usable = cells.filter(function (c) { return c && isPoint(c.point) && isNum(c.level); });
-    var most = usable.reduce(function (top, c) { return Math.max(top, isNum(c.count) ? c.count : 0); }, 0);
+  function trafficFeatures(segments) {
     return {
       type: 'FeatureCollection',
-      features: usable.map(function (c) {
+      features: (Array.isArray(segments) ? segments : []).map(function (s) {
+        return {
+          type: 'Feature',
+          properties: { level: s.level },
+          geometry: { type: 'LineString', coordinates: s.c.map(toLngLat) }
+        };
+      })
+    };
+  }
+
+  function hotspotFeatures(cells) {
+    return {
+      type: 'FeatureCollection',
+      features: cells.filter(function (c) { return c && isPoint(c.point) && isNum(c.level); }).map(function (c) {
         return {
           type: 'Feature',
           properties: {
-            level: Math.max(0, Math.min(c.level, 1)),
-            // Square root, so a cell's area rather than its width tracks its count.
-            s: most > 0 && isNum(c.count) ? Math.sqrt(Math.max(c.count, 0) / most) : 0
+            level: c.level,
+            season: isNum(c.season) ? c.season : 1,
+            // Metres. Tiles are about 240 m wide, so neighbouring circles rarely overlap.
+            r: 25 + 85 * c.level
           },
           geometry: { type: 'Point', coordinates: toLngLat(c.point) }
         };
@@ -1172,44 +1176,35 @@
     };
   }
 
-  function renderHotspotStatus(treeCells) {
-    var message = hotspotErrors.trees || hotspotErrors.traffic;
+  function renderHotspotStatus(message, treeCells) {
     var note = message;
     if (!note && state.treesOn && treeCells === 0) note = 'No tree hotspots for these settings.';
     setStatus($('hotspot-status'), note, Boolean(message));
     show($('hotspot-retry'), Boolean(message));
   }
 
-  async function loadHotspots(kind) {
+  async function loadHotspots() {
     if (!map) return;
-    hotspotZoom = Math.floor(map.getZoom());
     var params = new URLSearchParams();
-    params.set('kind', kind);
-    params.set('zoom', String(hotspotZoom));
-    if (kind === 'trees') {
-      if (state.monthOverride) params.set('month', String(state.monthOverride));
-      if (state.groups) params.set('groups', state.groups.join(','));
-    }
-    var source = kind === 'trees' ? 'hotTrees' : 'hotTraffic';
+    if (state.monthOverride) params.set('month', String(state.monthOverride));
+    if (state.groups) params.set('groups', state.groups.join(','));
     var data;
     try {
-      data = await latest(hotspotChannels[kind], '/api/hotspots?' + params.toString(), {}, ROUTE_TIMEOUT);
+      data = await latest(hotspotChannel, '/api/hotspots?' + params.toString(), {}, ROUTE_TIMEOUT);
     } catch (e) {
       // Old circles describe other settings, so they go too.
-      setMapData(source, emptyLines());
-      hotspotErrors[kind] = (kind === 'trees' ? 'Tree circles failed: ' : 'Traffic circles failed: ') + e.message;
-      renderHotspotStatus(null);
+      setMapData('hotTrees', emptyLines());
+      renderHotspotStatus('Tree circles failed: ' + e.message, null);
       return;
     }
     if (data === STALE) return;
-    hotspotErrors[kind] = '';
     var cells = Array.isArray(data.cells) ? data.cells : [];
-    setMapData(source, hotspotFeatures(cells));
-    if (kind === 'trees' && data.query) {
+    setMapData('hotTrees', hotspotFeatures(cells));
+    if (data.query) {
       $('hotspot-query').textContent = JSON.stringify(data.query, null, 2);
       show($('hotspot-query-block'), true);
     }
-    renderHotspotStatus(kind === 'trees' ? cells.length : null);
+    renderHotspotStatus('', cells.length);
   }
 
   function renderLegendSteps() {

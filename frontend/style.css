@@ -752,6 +752,7 @@ select { min-height: 44px; margin-top: 4px; }
 }
 
 .legend-line-clean { background: var(--clean); }
+.legend-line-traffic { background: linear-gradient(90deg, #f2c94c, #eb5a2c); }
 .legend-line-short { background: var(--short); }
 
 .legend-note { font-size: 13px; color: var(--ink-2); }

@@ -618,49 +618,36 @@ def symptoms(req: SymptomRequest):
     return {"suggestions": out, "note": "A suggestion, not a diagnosis. An allergist can test for specific pollens.", "elastic_query": body}
 
 
-def tree_hotspots(zoom, month, groups):
-    """Elastic grid aggregation: where allergenic trees cluster, weighted by what's in season for this person."""
+HOTSPOT_PRECISION = 17  # Fixed tiles of about 240 m here, so a place keeps the same circle at every zoom.
+
+
+def tree_hotspots(month, groups):
+    """Elastic grid aggregation: how much of this person's pollen load each block holds, and how much is in season."""
     filters = [{"range": {"level": {"gte": 2}}}]
     filters.append({"terms": {"allergen_group": groups}} if groups else {"bool": {"must_not": {"term": {"allergen_group": LOW_ALLERGEN}}}})
     query = {"size": 0, "query": {"bool": {"filter": filters}}, "aggs": {"cells": {
-        "geotile_grid": {"field": "location", "precision": min(zoom + 4, 20), "size": 4000},
+        "geotile_grid": {"field": "location", "precision": HOTSPOT_PRECISION, "size": 4000},
         "aggs": {"center": {"geo_centroid": {"field": "location"}},
                  "by_group": {"terms": {"field": "allergen_group", "size": 25}, "aggs": {"weight": {"sum": {"field": "weight"}}}}}}}}
     weights = person_weights(groups, month)
     buckets = es().search(index=TREES_INDEX, **query)["aggregations"]["cells"]["buckets"]
-    peak = sorted(sum(g["weight"]["value"] for g in b["by_group"]["buckets"]) for b in buckets)
-    # A fixed in-season scale, so November really looks dimmer than April.
-    scale = peak[int(len(peak) * 0.97)] if peak else 1.0
+    loads = [sum(g["weight"]["value"] for g in b["by_group"]["buckets"]) for b in buckets]
+    scale = sorted(loads)[int(len(loads) * 0.97)] if loads else 1.0
     cells = []
-    for b in buckets:
+    for b, load in zip(buckets, loads):
         now = sum(g["weight"]["value"] * weights.get(g["key"], 0.0) for g in b["by_group"]["buckets"])
         c = b["center"]["location"]
-        cells.append({"point": [round(c["lat"], 5), round(c["lon"], 5)], "count": b["doc_count"], "level": round(min(now / scale, 1.0), 3)})
+        cells.append({"point": [round(c["lat"], 5), round(c["lon"], 5)], "count": b["doc_count"],
+                      "level": round(min((load / scale) ** 0.5, 1.0), 3) if scale else 0.0,
+                      "season": round(now / load, 3) if load else 0.0})
     return cells, query
 
 
-def traffic_hotspots(zoom):
-    """Elastic grid aggregation over the latest congestion readings."""
-    query = {"size": 0, "query": {"bool": {"filter": [{"range": {"congestion": {"gte": 0.25}}}, {"range": {"updated": {"gte": "now-15m"}}}]}}, "aggs": {"cells": {
-        "geotile_grid": {"field": "point", "precision": min(zoom + 4, 20), "size": 4000},
-        "aggs": {"center": {"geo_centroid": {"field": "point"}}, "avg_congestion": {"avg": {"field": "congestion"}}}}}}
-    buckets = es().search(index=TRAFFIC_INDEX, **query)["aggregations"]["cells"]["buckets"]
-    return [{"point": [round(b["center"]["location"]["lat"], 5), round(b["center"]["location"]["lon"], 5)], "count": b["doc_count"], "level": round(b["avg_congestion"]["value"], 3)} for b in buckets], query
-
-
 @app.get("/api/hotspots")
-def hotspots(kind: str = "trees", zoom: int = 13, month: int | None = None, groups: str | None = None):
+def hotspots(month: int | None = None, groups: str | None = None):
     require_elastic()
-    zoom = max(10, min(zoom, 17))
-    if kind == "traffic":
-        if not es().indices.exists(index=TRAFFIC_INDEX):
-            return {"kind": kind, "cells": [], "query": None}
-        cells, query = traffic_hotspots(zoom)
-    elif kind == "trees":
-        cells, query = tree_hotspots(zoom, month or current_month(), [g for g in groups.split(",") if g] if groups else None)
-    else:
-        raise HTTPException(400, "kind must be trees or traffic")
-    return {"kind": kind, "cells": cells, "query": query}
+    cells, query = tree_hotspots(month or current_month(), [g for g in groups.split(",") if g] if groups else None)
+    return {"cells": cells, "query": query}
 
 
 @app.get("/api/traffic")
