@@ -12,3 +12,4 @@ scikit-learn
 pydantic>=2
 pytest
 httpx
+mapbox-vector-tile

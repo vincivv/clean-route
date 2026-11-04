@@ -17,6 +17,10 @@ LOW_ALLERGEN = "low_allergen"
 MLON = math.cos(math.radians(CENTER[0]))
 ALPHAS = [0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4]
 KNEE_SHARE = 0.8  # Take the shortest detour that gets 80% of the best available saving.
+EDGE_PENALTY_M = 8.0  # Every extra piece of path costs a little, which stops routes zigzagging between sidewalks.
+CONGESTION_WEIGHT = 1.0
+COVERAGE_M = 300
+HEAVY_CONGESTION = 0.4
 
 
 def road_penalty(highway: str) -> float:
@@ -36,7 +40,8 @@ class Network:
     node_ids: list = field(default_factory=list)
     nodes: dict = field(default_factory=dict)
     tree: cKDTree | None = None
-    ix: dict = field(default_factory=dict)  # Shared across per-request copies.
+    ix: dict = field(default_factory=dict)
+    congestion: dict = field(default_factory=dict)  # Live, 0 to 1, by edge id. Empty when there's no traffic feed.
 
     @classmethod
     def load(cls):
@@ -61,6 +66,10 @@ class Network:
         _, i = self.tree.query((latlon[0], latlon[1] * MLON))
         return self.node_ids[i]
 
+    def covers(self, latlon) -> bool:
+        dist, _ = self.tree.query((latlon[0], latlon[1] * MLON))
+        return dist * 111_320 <= COVERAGE_M
+
     def exposure(self, edge_id: str, weights: dict) -> float:
         s = self.scores.get(edge_id, {})
         return sum(v * weights.get(g, 0.0) for g, v in s.items())
@@ -72,7 +81,10 @@ class Network:
         out = []
         for a, b in zip(path, path[1:]):
             e = self.edges[self.graph[a][b]["id"]]
-            pts = e["coords"] if e["u"] == a else list(reversed(e["coords"]))
+            # Stored geometry doesn't reliably run from u to v, so orient it by whichever end touches the node we're leaving.
+            at = self.nodes[a]
+            near = lambda p: (p[0] - at[0]) ** 2 + ((p[1] - at[1]) * MLON) ** 2
+            pts = e["coords"] if near(e["coords"][0]) <= near(e["coords"][-1]) else list(reversed(e["coords"]))
             out += pts if not out else pts[1:]
         return out
 
@@ -85,6 +97,7 @@ class Network:
             "segment_exposure": round(sum(self.exposure(i, weights) for i in ids), 1),
             "major_road_share": round(sum(self.edges[i]["length"] for i in ids if road_penalty(self.edges[i]["highway"]) >= 0.6) / length, 3),
             "pollution_zone_share": round(sum(self.edges[i]["length"] for i in ids if i in self.zone) / length, 3),
+            "congested_share": round(sum(self.edges[i]["length"] for i in ids if self.congestion.get(i, 0) >= HEAVY_CONGESTION) / length, 3),
         }
 
     def _index(self):
@@ -122,14 +135,15 @@ class Network:
         base = self.stats(base_path, weights)
         budget = base["length_m"] * max_detour
         exposure = np.array([self.exposure(i, weights) for i in ix["ids"]])
-        factor = 1.0 + (ix["road"] + ix["zone"] if asthma else 0.0)
+        live = np.array([self.congestion.get(i, 0.0) for i in ix["ids"]]) if self.congestion else 0.0
+        factor = 1.0 + (ix["road"] + ix["zone"] + CONGESTION_WEIGHT * live if asthma else 0.0)
 
         def badness(st):
             return st["segment_exposure"] + (self._air_cost(st) if asthma else 0.0)
 
         options = [(base["length_m"], badness(base), base_path)]
         for alpha in ALPHAS:
-            path = self._solve(a, b, ix["lengths"] * factor + alpha * exposure)
+            path = self._solve(a, b, ix["lengths"] * factor + alpha * exposure + EDGE_PENALTY_M)
             st = self.stats(path, weights)
             if st["length_m"] > budget:
                 break
@@ -140,4 +154,4 @@ class Network:
 
     @staticmethod
     def _air_cost(s):
-        return s["length_m"] * (s["major_road_share"] * 0.6 + s["pollution_zone_share"] * 0.3)
+        return s["length_m"] * (s["major_road_share"] * 0.6 + s["pollution_zone_share"] * 0.3 + s.get("congested_share", 0.0) * CONGESTION_WEIGHT)

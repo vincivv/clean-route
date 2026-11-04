@@ -64,3 +64,12 @@ def test_published_rating_wins_and_no_reports_is_not_zero():
     assert plane["mistral_level"] == 3 and plane["allergy_level"] == 2 and plane["verified"]
     assert table["Pinus radiata"]["allergy_level"] == 1
     assert not table["Maytenus boaria"]["verified"]
+
+
+def test_coords_are_continuous_even_when_geometry_is_stored_backwards():
+    net = small_net()
+    net.edges["ab"]["coords"] = list(reversed(net.edges["ab"]["coords"]))
+    net.edges["bd"]["coords"] = [net.nodes["d"], [37.0002, -121.9985], net.nodes["b"]]
+    coords = net.coords(["a", "b", "d"])
+    assert coords[0] == net.nodes["a"] and coords[-1] == net.nodes["d"]
+    assert coords[1] == net.nodes["b"]

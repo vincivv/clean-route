@@ -15,7 +15,7 @@ MONTH = int(sys.argv[2]) if len(sys.argv) > 2 else 4
 random.seed(7)
 client = TestClient(app)
 results = []
-ids = NET.node_ids
+ids = sorted(NET.node_ids)  # Sets vary between runs, so sort to make the sample repeatable.
 while len(results) < N:
     a, b = random.sample(ids, 2)
     start, end = NET.nodes[a], NET.nodes[b]
