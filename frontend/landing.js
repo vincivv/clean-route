@@ -92,8 +92,23 @@
 
       var trees = get('/api/hotspots?month=4&groups=plane,olive,ash,privet');
       var traffic = get('/api/traffic');
-      var walk = get('/api/route', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ start: START, end: END, groups: ['plane', 'olive', 'ash', 'privet'], month: 4, asthma: true }) });
+      // Live traffic can leave a walk with no cleaner option, so try the next walk rather than show zeros.
+      function firstCleaner(trips) {
+        if (!trips.length) return Promise.reject(new Error('no cleaner walk right now'));
+        return get('/api/route', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ start: trips[0].start, end: trips[0].end, groups: ['plane', 'olive', 'ash', 'privet'], month: 4, asthma: true }) })
+          .then(function (d) {
+            if (d.summary.same_route || !(d.summary.exposure_reduction_pct > 0)) return firstCleaner(trips.slice(1));
+            d.tripName = trips[0].name;
+            return d;
+          });
+      }
+      var walk = firstCleaner([
+        { name: 'Venue to Dolores Park', start: START, end: END },
+        { name: 'Oracle Park to Hayes Valley', start: [37.7786, -122.3893], end: [37.7760, -122.4240] },
+        { name: 'Union Square to Alamo Square', start: [37.7879, -122.4074], end: [37.7764, -122.4346] },
+        { name: 'Ferry Building to Civic Center', start: [37.7955, -122.3937], end: [37.7793, -122.4193] }
+      ]);
 
       trees.then(function (d) {
         map.getSource('trees').setData({ type: 'FeatureCollection', features: d.cells.map(function (c) {
@@ -118,6 +133,7 @@
           .then(function () {
             var s = d.summary;
             $('hero-live').hidden = false;
+            $('hero-note').textContent = d.tripName + ', planning for April, live traffic';
             $('hero-note').hidden = false;
             countTo($('live-pollen'), s.exposure_reduction_pct, percent);
             countTo($('live-air'), s.air_reduction_pct, percent);
