@@ -72,7 +72,7 @@ def index():
     es = es_client()
     es.options(ignore_status=404).indices.delete(index=PLACES_INDEX)
     es.indices.create(index=PLACES_INDEX, mappings={"properties": {
-        "name": {"type": "search_as_you_type"}, "name_exact": {"type": "keyword"}, "alt": {"type": "search_as_you_type"}, "category": {"type": "text"},
+        "name": {"type": "search_as_you_type"}, "name_exact": {"type": "keyword"}, "alt": {"type": "search_as_you_type"}, "category": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
         "detail": {"type": "keyword", "index": False}, "landmark": {"type": "boolean"}, "location": {"type": "geo_point"}}})
     ok, errors = helpers.bulk(es, ({"_index": PLACES_INDEX, "_source": d | {"name_exact": d["name"].lower()}} for d in docs()), chunk_size=3000, raise_on_error=False)
     es.indices.refresh(index=PLACES_INDEX)

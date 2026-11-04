@@ -405,10 +405,11 @@ def search_places(text, near=None, size=6):
             {"term": {"name_exact": {"value": shorten_street(q).lower(), "boost": 60}}},
             {"match_phrase": {"name": {"query": q, "boost": 12}}},
             {"multi_match": {"query": q, "type": "bool_prefix", "fields": fields, "operator": "and", "boost": 4}},
-            {"multi_match": {"query": q, "fields": ["name", "alt"], "fuzziness": "AUTO", "prefix_length": 1, "operator": "and", "boost": 2}},
+            {"match_phrase_prefix": {"name": {"query": q, "boost": 20}}},
+            {"multi_match": {"query": q, "fields": ["name", "alt"], "fuzziness": "AUTO:5,8", "prefix_length": 1, "operator": "and", "boost": 0.5}},
             {"match": {"category": {"query": q, "boost": 1}}},
-        ], "minimum_should_match": 1}},
-        "functions": [{"filter": {"term": {"landmark": True}}, "weight": 1.6}, {"gauss": {"location": {"origin": origin, "scale": "2km", "decay": 0.6}}}],
+        ], "minimum_should_match": 1, "must_not": [] if q[0].isdigit() else [{"term": {"category.keyword": "address"}}]}},
+        "functions": [{"filter": {"term": {"landmark": True}}, "weight": 3}, {"filter": {"term": {"category.keyword": "street"}}, "weight": 1.5}, {"gauss": {"location": {"origin": origin, "scale": "2km", "decay": 0.6}}}],
         "score_mode": "multiply", "boost_mode": "multiply"}}
     hits = es().search(index=PLACES_INDEX, query=query, size=size * 2, source=["name", "detail", "location"])["hits"]["hits"]
     out, seen = [], set()
@@ -578,12 +579,24 @@ class SymptomRequest(BaseModel):
     coords: list[list[float]] | None = None
 
 
+MONTH_WORDS = {w: i + 1 for i, w in enumerate("january february march april may june july august september october november december".split())}
+MONTH_WORDS.update({"spring": 4, "summer": 7, "fall": 10, "autumn": 10, "winter": 1})
+
+
+def month_in_text(text):
+    """'My eyes itch every March' is about March, even when it's typed in November."""
+    for word in re.findall(r"[a-z]+", text.lower()):
+        if word in MONTH_WORDS and word != "may":
+            return MONTH_WORDS[word]
+    return None
+
+
 @app.post("/api/symptoms")
 def symptoms(req: SymptomRequest):
     require_elastic()
-    month = req.month or current_month()
+    month = req.month or month_in_text(req.text) or current_month()
     body = {
-        "size": 6,
+        "size": 12,
         "_source": ["scientific", "common", "allergen_group", "level", "symptoms_text", "bloom_months", "trees"],
         "retriever": {"rrf": {"rank_window_size": 30, "retrievers": [
             {"standard": {"query": {"bool": {"must": {"multi_match": {"query": req.text, "fields": ["symptoms_text", "common", "rationale"]}},

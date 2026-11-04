@@ -9,11 +9,12 @@
   // Sequential, light to dark. Green is reserved for the clean route.
   var HEAT_COLORS = ['#f7d9a8', '#f5c282', '#f2a65a', '#ec8a3c', '#de6a26', '#c44e1c', '#9c3614', '#6f230c'];
   var HEAT_MIN_RATIO = 0.1;
-  // Cool ramp so congestion can't be mistaken for pollen exposure.
-  var TRAFFIC_COLORS = ['#b4bdf2', '#7f86e8', '#5546d6', '#3a1fb0', '#25107a'];
+  // Dim yellow, through orange, to saturated red. Trees fill these circles; traffic rings them.
+  var HOTSPOT_COLORS = ['#f4d83e', '#ffb224', '#ff7a1a', '#ff4a1c', '#ff1f1f'];
+  var HOT_LEVEL = 0.6;
   var TRAFFIC_REFRESH = 120000;
   var TRAFFIC_MAX_AGE = 600000;
-  var MAP_STYLE = 'https://tiles.openfreemap.org/styles/positron';
+  var MAP_STYLE = 'https://tiles.openfreemap.org/styles/dark';
   var OSM_CREDIT = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
   var LOCATION_FAILED = "Couldn't use your location. Click the map to set a start.";
   var ROUTE_TIMEOUT = 30000;
@@ -27,7 +28,8 @@
     groups: null, // null means every group
     monthOverride: null, // null means the current month, and requests leave it out
     asthma: false,
-    heatOn: true,
+    heatOn: false,
+    treesOn: true,
     start: null,
     startIsYou: false,
     here: null,
@@ -36,7 +38,6 @@
     end: null,
     placeNames: null,
     route: null,
-    lastSymptomText: null,
     profile: null,
     profileDirty: false // true when local edits couldn't be saved to the server
   };
@@ -45,7 +46,7 @@
   var mapStyleReady = false;
   var startMarker = null;
   var endMarker = null;
-  var mapData = { heat: emptyLines(), traffic: emptyLines(), routes: emptyLines() };
+  var mapData = { heat: emptyLines(), hotTrees: emptyLines(), hotTraffic: emptyLines(), routes: emptyLines() };
   var routeTimer, heatTimer, hintTimer;
   var fitOnNextRoute = false;
   var busy = { route: false, ask: false, heat: false };
@@ -88,6 +89,8 @@
       maximumFractionDigits: decimals || 0
     });
   }
+
+  function fmtScore(v) { return fmt(v, isNum(v) && Math.abs(v) < 100 ? 1 : 0); }
 
   function fmtShare(v) { return isNum(v) ? Math.round(v * 100) + '%' : 'n/a'; }
 
@@ -190,6 +193,13 @@
     };
   }
 
+  function sized(small, large) {
+    function atZoom(factor) {
+      return ['interpolate', ['linear'], ['get', 's'], 0, small * factor, 1, large * factor];
+    }
+    return ['interpolate', ['linear'], ['zoom'], 11, atZoom(0.65), 13, atZoom(1), 15, atZoom(1.4), 18, atZoom(2.2)];
+  }
+
   function rampExpression(input, from, colors) {
     var expression = ['interpolate', ['linear'], input];
     colors.forEach(function (color, i) {
@@ -220,11 +230,14 @@
       return;
     }
     map.touchZoomRotate.disableRotation();
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     map.addControl(new maplibregl.AttributionControl({ compact: false, customAttribution: OSM_CREDIT }), 'bottom-right');
 
     map.on('style.load', addDataLayers);
     map.on('click', onMapClick);
+    map.on('zoomend', function () {
+      if (Math.floor(map.getZoom()) !== hotspotZoom) scheduleHotspots(200);
+    });
 
     var usedBackup = false;
     var tileErrors = 0;
@@ -263,18 +276,73 @@
     fitHome();
   }
 
+  // The dark style is close to black: lift it to charcoal, with thin grey roads and quiet labels.
+  function tuneBasemap() {
+    var fills = {
+      water: '#111316', landuse_residential: '#1d1f23', landcover_wood: '#202327', landuse_park: '#202327',
+      landcover_ice_shelf: '#1b1d20', landcover_glacier: '#1b1d20', building: '#23262a',
+      road_area_pier: '#1b1d20', 'aeroway-area': '#23262a'
+    };
+    var lines = {
+      waterway: '#111316', road_pier: '#2f3237', highway_path: '#34383e', highway_minor: '#3c4046',
+      highway_major_casing: '#2a2d31', highway_major_inner: '#4b5057', highway_major_subtle: '#4b5057',
+      highway_motorway_casing: '#2a2d31', highway_motorway_inner: '#5a6068', highway_motorway_subtle: '#50555c',
+      railway_transit: '#2d3035', railway_transit_dashline: '#1b1d20', railway_minor: '#2d3035',
+      railway_minor_dashline: '#1b1d20', railway: '#2d3035', railway_dashline: '#1b1d20',
+      'aeroway-taxiway': '#2d3035', 'aeroway-runway-casing': '#2d3035', 'aeroway-runway': '#23262a',
+      boundary_state: '#3a3e44', 'boundary_country_z0-4': '#3a3e44', 'boundary_country_z5-': '#3a3e44'
+    };
+    function byZoom(z11, z13, z15, z18) {
+      return ['interpolate', ['linear'], ['zoom'], 11, z11, 13, z13, 15, z15, 18, z18];
+    }
+    var widths = {
+      highway_path: byZoom(0.2, 0.3, 0.6, 1.5),
+      highway_minor: byZoom(0.2, 0.5, 1, 3),
+      highway_major_inner: byZoom(0.5, 0.9, 1.8, 5),
+      highway_major_subtle: byZoom(0.5, 0.9, 1.8, 5),
+      highway_motorway_inner: byZoom(0.8, 1.3, 2.4, 6),
+      highway_motorway_subtle: byZoom(0.8, 1.3, 2.4, 6)
+    };
+    map.getStyle().layers.forEach(function (layer) {
+      var id = layer.id;
+      if (widths[id]) map.setPaintProperty(id, 'line-width', widths[id]);
+      if (id === 'highway_major_casing' || id === 'highway_motorway_casing') map.setPaintProperty(id, 'line-opacity', 0);
+      if (layer.type === 'background') map.setPaintProperty(id, 'background-color', '#1b1d20');
+      else if (fills[id]) map.setPaintProperty(id, 'fill-color', fills[id]);
+      else if (lines[id]) map.setPaintProperty(id, 'line-color', lines[id]);
+      else if (layer.type === 'symbol' && layer.layout && layer.layout['text-field']) {
+        map.setPaintProperty(id, 'text-color', id === 'water_name' ? '#5f6b78' : '#8d9299');
+        map.setPaintProperty(id, 'text-halo-color', '#17191c');
+        map.setPaintProperty(id, 'text-halo-width', 1);
+      }
+    });
+  }
+
+  function addCircleLayer(id, source, paint, filter, before) {
+    var layer = { id: id, type: 'circle', source: source, paint: paint };
+    if (filter) layer.filter = filter;
+    map.addLayer(layer, before);
+  }
+
   // Runs on every style load, because changing style drops custom layers.
   function addDataLayers() {
     mapStyleReady = true;
-    var labels = map.getStyle().layers.find(function (l) { return l.type === 'symbol'; });
+    try { tuneBasemap(); } catch (_) { /* the backup raster style has nothing to tune */ }
+    // Above roads and buildings, under the street names. The style's first symbol layer is a
+    // water label underneath all of those, so it can't be the anchor.
+    var styleLayers = map.getStyle().layers;
+    var lastShape = styleLayers.reduce(function (at, l, i) {
+      return l.id === 'building' || l.id.indexOf('highway_motorway') === 0 || l.id.indexOf('railway') === 0 ? i : at;
+    }, -1);
+    var labels = styleLayers.find(function (l, i) { return i > lastShape && l.type === 'symbol'; });
     var below = labels ? labels.id : undefined;
 
-    ['heat', 'traffic', 'routes'].forEach(function (id) {
+    ['heat', 'hotTrees', 'hotTraffic', 'routes'].forEach(function (id) {
       if (map.getSource(id)) return;
       map.addSource(id, { type: 'geojson', data: mapData[id], tolerance: 0.5, buffer: 32, maxzoom: 15 });
     });
 
-    // Under the labels: exposure first, then congestion beside it.
+    // Street detail, off by default, sits under the circles.
     map.addLayer({
       id: 'heat',
       type: 'line',
@@ -286,35 +354,63 @@
         'line-opacity': 0.9
       }
     }, below);
-    map.addLayer({
-      id: 'traffic',
-      type: 'line',
-      source: 'traffic',
-      layout: { 'line-cap': 'round', visibility: trafficVisible() ? 'visible' : 'none' },
-      paint: {
-        'line-color': rampExpression(['get', 'level'], 0, TRAFFIC_COLORS),
-        'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 13, 2, 15, 3.5, 18, 7],
-        'line-offset': ['interpolate', ['linear'], ['zoom'], 11, 0.5, 15, 3, 18, 7],
-        'line-opacity': 0.95
-      }
-    }, below);
+
+    var color = rampExpression(['get', 'level'], 0, HOTSPOT_COLORS);
+    var isHot = ['>=', ['get', 'level'], HOT_LEVEL];
+
+    // Trees are filled. Hot cells also get a soft halo and a thin outer ring.
+    addCircleLayer('trees-halo', 'hotTrees', {
+      'circle-radius': sized(16, 42), 'circle-color': color, 'circle-opacity': 0.14, 'circle-blur': 0.35
+    }, isHot, below);
+    addCircleLayer('trees-ring', 'hotTrees', {
+      'circle-radius': sized(16, 42), 'circle-opacity': 0,
+      'circle-stroke-width': 1, 'circle-stroke-color': color, 'circle-stroke-opacity': 0.5
+    }, isHot, below);
+    addCircleLayer('trees-glow', 'hotTrees', {
+      'circle-radius': sized(8, 22), 'circle-color': color, 'circle-opacity': 0.55, 'circle-blur': 1
+    }, isHot, below);
+    addCircleLayer('trees-core', 'hotTrees', {
+      'circle-radius': sized(2, 9),
+      'circle-color': color,
+      'circle-opacity': ['interpolate', ['linear'], ['get', 'level'], 0, 0.4, HOT_LEVEL, 0.9, 1, 1],
+      'circle-blur': 0.15
+    }, null, below);
+
+    // Traffic is rings with a clear middle, on the same colour scale.
+    addCircleLayer('traffic-halo', 'hotTraffic', {
+      'circle-radius': sized(14, 34), 'circle-color': color, 'circle-opacity': 0.12, 'circle-blur': 0.7
+    }, isHot, below);
+    addCircleLayer('traffic-outer', 'hotTraffic', {
+      'circle-radius': sized(20, 44), 'circle-opacity': 0,
+      'circle-stroke-width': 1, 'circle-stroke-color': color, 'circle-stroke-opacity': 0.45
+    }, isHot, below);
+    addCircleLayer('traffic-ring', 'hotTraffic', {
+      'circle-radius': sized(2.5, 11), 'circle-opacity': 0,
+      'circle-stroke-width': ['interpolate', ['linear'], ['get', 'level'], 0, 1, HOT_LEVEL, 1.5, 1, 2.75],
+      'circle-stroke-color': color,
+      'circle-stroke-opacity': ['interpolate', ['linear'], ['get', 'level'], 0.25, 0.3, HOT_LEVEL, 0.85, 1, 1]
+    }, null, below);
+
+    syncHotspotLayers();
 
     // Over everything: the routes are the point of the page.
-    [
-      ['route-short-casing', 'shortest', '#ffffff', 8],
-      ['route-short', 'shortest', '#5b636d', 5],
-      ['route-clean-casing', 'clean', '#ffffff', 10],
-      ['route-clean', 'clean', '#0b7a3b', 7]
-    ].forEach(function (r) {
+    function routeLine(id, role, paint) {
       map.addLayer({
-        id: r[0],
+        id: id,
         type: 'line',
         source: 'routes',
-        filter: ['==', ['get', 'role'], r[1]],
+        filter: ['==', ['get', 'role'], role],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': r[2], 'line-width': r[3] }
+        paint: paint
       });
-    });
+    }
+    routeLine('route-short-casing', 'shortest', { 'line-color': '#101214', 'line-width': 6.5 });
+    routeLine('route-short', 'shortest', { 'line-color': '#c9ced6', 'line-width': 3.5 });
+    routeLine('route-clean-glow', 'clean', { 'line-color': '#2ee6a6', 'line-width': 18, 'line-blur': 10, 'line-opacity': 0.5 });
+    routeLine('route-clean-casing', 'clean', { 'line-color': '#0d1412', 'line-width': 8 });
+    routeLine('route-clean', 'clean', { 'line-color': '#2ee6a6', 'line-width': 5 });
+
+    scheduleHotspots(0);
   }
 
   function setMapData(id, data) {
@@ -330,18 +426,23 @@
 
   // A hidden tab or pane has no size, and fitting to that gives a useless zoom.
   // Wait for a real size before fitting.
+  function mapPadding() {
+    if (window.innerWidth < 900) return { top: 130, bottom: 220, left: 30, right: 30 };
+    return { top: 60, bottom: 60, left: (sidebarOpen ? 444 : 80), right: 390 };
+  }
+
   function fitHome() {
     if (!map) return;
     var box = map.getContainer();
     homePending = !(box.clientWidth > 0 && box.clientHeight > 0);
-    if (!homePending) map.fitBounds(toLngLatBounds(homeBounds), { padding: 24, animate: false });
+    if (!homePending) map.fitBounds(toLngLatBounds(homeBounds), { padding: Math.min(24, box.clientWidth / 20), animate: false });
   }
 
   function fitPoints(points) {
     if (!map || !points.length) return;
     var bounds = new maplibregl.LngLatBounds();
     points.forEach(function (p) { bounds.extend(toLngLat(p)); });
-    map.fitBounds(bounds, { padding: { top: 70, bottom: 50, left: 60, right: 60 }, maxZoom: 16, duration: 500 });
+    map.fitBounds(bounds, { padding: mapPadding(), maxZoom: 16, duration: 500 });
   }
 
   function pinLabel(which) {
@@ -420,7 +521,6 @@
 
   function updateHint() {
     clearTimeout(hintTimer);
-    var hint = $('map-hint');
     $('map').classList.toggle('picking', !(state.start && state.end) || state.startIsYou);
     show($('clear-route'), Boolean((state.start && !state.startIsYou) || state.end));
     var text = '';
@@ -431,17 +531,41 @@
     } else if (!state.end && !state.startIsYou) {
       text = 'Now click to set your end';
     }
-    hint.textContent = text;
-    show(hint, Boolean(text));
-    show($('result-empty'), !state.route && $('route-error').hidden);
+    $('map-hint-text').textContent = text;
+    show($('location-retry'), text === LOCATION_FAILED);
+    show($('map-hint'), Boolean(text));
   }
 
   function flashHint(text) {
-    var hint = $('map-hint');
-    hint.textContent = text;
-    show(hint, true);
+    $('map-hint-text').textContent = text;
+    show($('location-retry'), false);
+    show($('map-hint'), true);
     clearTimeout(hintTimer);
-    hintTimer = setTimeout(function () { show(hint, false); }, 3500);
+    hintTimer = setTimeout(function () { show($('map-hint'), false); }, 3500);
+  }
+
+  // ---- sidebar ----
+
+  var SIDEBAR_KEY = 'cleanroute.sidebar';
+  var sidebarOpen = true;
+
+  function setSidebar(open) {
+    sidebarOpen = open;
+    var bar = $('sidebar');
+    bar.classList.toggle('is-hidden', !open);
+    bar.inert = !open;
+    $('sidebar-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+    $('sidebar-toggle-label').textContent = open ? 'Hide details' : 'Show details';
+  }
+
+  function initSidebar() {
+    var saved = null;
+    try { saved = window.localStorage.getItem(SIDEBAR_KEY); } catch (_) { saved = null; }
+    setSidebar(saved === null ? window.innerWidth >= 900 : saved === '1');
+    $('sidebar-toggle').addEventListener('click', function () {
+      setSidebar(!sidebarOpen);
+      try { window.localStorage.setItem(SIDEBAR_KEY, sidebarOpen ? '1' : '0'); } catch (_) { /* this visit only */ }
+    });
   }
 
   // ---- controls ----
@@ -517,6 +641,7 @@
   function controlsChanged() {
     scheduleRoute(250);
     scheduleHeat(250);
+    scheduleHotspots(250);
   }
 
   function groupLabel(id) {
@@ -578,7 +703,6 @@
     $('heat-toggle').addEventListener('change', function (e) {
       state.heatOn = e.target.checked;
       setLayerVisible('heat', state.heatOn);
-      show($('legend-heat'), state.heatOn);
       if (state.heatOn) {
         scheduleHeat(0);
       } else {
@@ -589,10 +713,21 @@
         show($('heat-retry'), false);
       }
     });
+    $('trees-toggle').addEventListener('change', function (e) {
+      state.treesOn = e.target.checked;
+      syncHotspotLayers();
+      if (state.treesOn) scheduleHotspots(0);
+    });
     $('traffic-toggle').addEventListener('change', function (e) {
       trafficTouched = true;
       trafficOn = e.target.checked;
       syncTraffic();
+      if (trafficOn) scheduleHotspots(0);
+    });
+    $('hotspot-retry').addEventListener('click', function () { scheduleHotspots(0); });
+    $('location-retry').addEventListener('click', function () {
+      locationAsked = false;
+      requestLocation();
     });
     $('preset').addEventListener('change', function (e) {
       if (e.target.value === '') return;
@@ -638,9 +773,10 @@
     setBusy('route', false);
     state.route = null;
     setMapData('routes', emptyLines());
-    show($('hero'), false);
-    $('hero').classList.remove('is-stale');
+    show($('stats'), false);
+    $('stats').classList.remove('is-stale');
     show($('details'), false);
+    show($('route-query'), false);
     show($('route-error'), false);
     localExposure = false;
     renderBadges();
@@ -651,7 +787,6 @@
     clearRouteResult();
     $('route-error-text').textContent = message;
     show($('route-error'), true);
-    show($('result-empty'), false);
   }
 
   async function runRoute() {
@@ -663,23 +798,23 @@
 
     show($('route-error'), false);
     setBusy('route', true);
-    $('hero').classList.add('is-stale');
-    $('result').setAttribute('aria-busy', 'true');
+    $('stats').classList.add('is-stale');
+    $('stats').setAttribute('aria-busy', 'true');
 
     var data;
     try {
       data = await latest(routeChannel, '/api/route', jsonPost(request), ROUTE_TIMEOUT);
     } catch (e) {
       // Never leave old numbers on screen for settings they don't describe.
-      $('result').removeAttribute('aria-busy');
+      $('stats').removeAttribute('aria-busy');
       showRouteError(e.status === 400 ? e.message : 'Route failed: ' + e.message);
       return;
     }
     if (data === STALE) return;
 
-    $('result').removeAttribute('aria-busy');
+    $('stats').removeAttribute('aria-busy');
     setBusy('route', false);
-    $('hero').classList.remove('is-stale');
+    $('stats').classList.remove('is-stale');
 
     if (!data || !data.shortest || !data.clean || !Array.isArray(data.clean.coords)) {
       showRouteError('Route failed: the server response was incomplete.');
@@ -690,7 +825,6 @@
     drawRoutes(data);
     renderResult(data, context);
     updateHint();
-    if (state.lastSymptomText) runSymptoms(state.lastSymptomText);
   }
 
   function routeRequest() {
@@ -721,9 +855,7 @@
     var parts = [];
     if (state.placeNames) parts.push(state.placeNames);
     parts.push(MONTHS[activeMonth() - 1]);
-    parts.push(groupsLabel());
-    if (state.asthma) parts.push('Asthma on');
-    return parts.join('. ') + '.';
+    return parts.join(' \u00b7 ');
   }
 
   function drawRoutes(data) {
@@ -747,40 +879,53 @@
     var summary = data.summary || {};
     var pct = isNum(summary.exposure_reduction_pct) ? Math.round(summary.exposure_reduction_pct) : 0;
     var same = sameCoords(data.shortest.coords, data.clean.coords);
-    var airOnly = !same && pct <= 0;
+    var asthma = Boolean(data.applied && data.applied.asthma);
+    var showAir = asthma && isNum(summary.air_reduction_pct);
+    var noTreesInSeason = Array.isArray(summary.in_season) && summary.in_season.length === 0;
 
-    show($('hero'), true);
-    show($('hero-gain'), !same);
-    show($('hero-same'), same);
-    if (same) {
-      $('hero-same-detail').textContent = isNum(data.shortest.minutes)
-        ? 'For these settings, ' + fmt(data.shortest.minutes, 1) + ' min with no cleaner option within the detour limit.'
-        : 'For these settings, no cleaner option within the detour limit.';
-    } else {
-      $('hero-pct-value').textContent = airOnly ? 'Less traffic' : pct + '%';
-      $('hero-pct-label').textContent = airOnly
-        ? 'none of your trees on either route, so this one avoids major roads'
-        : 'less estimated exposure from trees within 25 m';
-      $('hero-time').textContent = extraTimeText(summary.extra_minutes);
-      var wide = summary.reduction_within_100m_pct;
-      $('hero-wide').textContent = !airOnly && isNum(wide) ? Math.round(wide) + '% if we count trees within 100 m' : '';
+    show($('stats'), true);
 
-      // Out of season the percentage is a share of almost nothing, so it can't be the headline.
-      var offSeason = !airOnly && Array.isArray(summary.in_season) && summary.in_season.length === 0;
-      show($('hero-pct-value').parentNode, !offSeason);
-      show($('hero-pct-label'), !offSeason);
-      show($('hero-wide'), !offSeason);
-      show($('hero-off-title'), offSeason);
-      show($('hero-off-detail'), offSeason);
-      if (offSeason) {
-        $('hero-off-title').textContent = 'None of your trees are in season '
-          + (state.monthOverride ? 'in ' + MONTHS[activeMonth() - 1] : 'this month');
-        $('hero-off-detail').textContent = 'When they are, this route has ' + pct + '% less exposure';
-      }
+    // Out of season the percentage is a share of almost nothing, so it can't be the headline.
+    var pollenTitle = '';
+    if (same) pollenTitle = 'The shortest route is already the cleanest.';
+    else if (noTreesInSeason) pollenTitle = 'None of your trees are in season';
+    else if (pct <= 0) pollenTitle = 'No less pollen on this walk';
+    var showFigure = !same && pct > 0;
+    $('stat-pollen-title').textContent = pollenTitle;
+    show($('stat-pollen-title'), Boolean(pollenTitle));
+    show($('stat-pollen-head'), showFigure);
+    show($('stat-pollen-track'), showFigure);
+    $('stat-pollen-track').classList.toggle('is-dim', noTreesInSeason);
+    if (showFigure) {
+      $('stat-pollen-value').textContent = pct + '%';
+      $('stat-pollen-label').textContent = noTreesInSeason ? 'when in season' : 'Less estimated pollen';
+      setBar($('stat-pollen-bar'), pct);
     }
-    $('hero-context').textContent = context;
+    var wide = summary.reduction_within_100m_pct;
+    $('stat-pollen-note').textContent = same
+      ? (isNum(data.shortest.minutes) ? fmt(data.shortest.minutes, 1) + ' min, with no cleaner option within the detour limit.' : '')
+      : (showFigure && !noTreesInSeason
+        ? 'Trees within 25 m' + (isNum(wide) ? '. ' + Math.round(wide) + '% counting trees within 100 m.' : '.')
+        : '');
 
-    renderCompare(data.shortest, data.clean, data.traffic_live === true);
+    // Traffic doesn't depend on the month, so this stat ignores the season.
+    show($('stat-air'), showAir);
+    if (showAir) {
+      var air = Math.round(summary.air_reduction_pct);
+      show($('stat-air-title'), air <= 0);
+      show($('stat-air-head'), air > 0);
+      show($('stat-air-track'), air > 0);
+      $('stat-air-value').textContent = air + '%';
+      if (air > 0) setBar($('stat-air-bar'), air);
+      $('stat-air-note').textContent = data.traffic_live === true ? 'Road type + live TomTom congestion' : 'Road type only';
+    }
+
+    $('stat-time').textContent = same ? '' : extraTimeText(summary.extra_minutes);
+    show($('stat-time'), !same);
+    $('stat-context').textContent = context;
+    renderStatsFoot();
+
+    renderCompare(data.shortest, data.clean, data.traffic_live === true, asthma);
     renderSpecies($('species-short'), data.shortest.top_species);
     renderSpecies($('species-clean'), data.clean.top_species);
 
@@ -788,6 +933,7 @@
     $('explanation').textContent = hasExplanation ? data.explanation : '';
     show($('explanation-block'), hasExplanation);
 
+    show($('route-query'), true);
     $('elastic-query').textContent = data.elastic_query
       ? JSON.stringify(data.elastic_query, null, 2)
       : 'No Elastic query for this route. The server did not return one.';
@@ -798,25 +944,44 @@
     renderBadges();
   }
 
+  function setBar(bar, pct) {
+    bar.style.transform = 'scaleX(' + Math.max(0, Math.min(pct, 100)) / 100 + ')';
+  }
+
+  function renderStatsFoot() {
+    var parts = [];
+    var trees = state.meta && state.meta.data && state.meta.data.trees;
+    if (isNum(trees)) parts.push('Based on ' + fmt(trees) + ' street trees');
+    if (state.route && state.route.traffic_live === true && trafficLive && trafficClockText) {
+      parts.push((trafficSource || 'Live') + ' traffic ' + trafficClockText);
+    }
+    $('stat-foot').textContent = parts.join(' \u00b7 ');
+    show($('stat-foot'), parts.length > 0);
+  }
+
   function extraTimeText(minutes) {
     if (!isNum(minutes)) return 'Extra time unknown';
     var rounded = Math.round(minutes * 10) / 10;
-    if (rounded > 0) return fmt(rounded, 1) + ' min longer';
-    if (rounded < 0) return fmt(-rounded, 1) + ' min shorter';
+    if (rounded > 0) return '+' + fmt(rounded, 1) + ' min';
+    if (rounded < 0) return '\u2212' + fmt(-rounded, 1) + ' min';
     return 'No extra time';
   }
 
-  function renderCompare(shortest, clean, trafficLive) {
-    var rows = [
-      ['Minutes', fmt(shortest.minutes, 1), fmt(clean.minutes, 1)],
-      ['Exposure', fmt(shortest.exposure), fmt(clean.exposure)],
-      ['Allergenic trees near', fmt(shortest.allergenic_trees_near), fmt(clean.allergenic_trees_near)],
-      ['Major road share', fmtShare(shortest.major_road_share), fmtShare(clean.major_road_share)],
-      ['Pollution zone share', fmtShare(shortest.pollution_zone_share), fmtShare(clean.pollution_zone_share)]
-    ];
-    if (trafficLive) {
-      rows.push(['Time in heavy traffic', fmtShare(shortest.congested_share), fmtShare(clean.congested_share)]);
+  function renderCompare(shortest, clean, trafficLive, asthma) {
+    var heavyTraffic = ['Time in heavy traffic', fmtShare(shortest.congested_share), fmtShare(clean.congested_share)];
+    var rows = [['Minutes', fmt(shortest.minutes, 1), fmt(clean.minutes, 1)]];
+    if (asthma) {
+      rows.push(['Traffic pollution score', fmtScore(shortest.air_exposure), fmtScore(clean.air_exposure)]);
+      if (trafficLive) rows.push(heavyTraffic);
+      rows.push(['Next to major roads', fmtShare(shortest.major_road_share), fmtShare(clean.major_road_share)]);
     }
+    rows.push(['Exposure', fmt(shortest.exposure), fmt(clean.exposure)]);
+    rows.push(['Allergenic trees near', fmt(shortest.allergenic_trees_near), fmt(clean.allergenic_trees_near)]);
+    if (!asthma) {
+      rows.push(['Major road share', fmtShare(shortest.major_road_share), fmtShare(clean.major_road_share)]);
+      if (trafficLive) rows.push(heavyTraffic);
+    }
+    rows.push(['Pollution zone share', fmtShare(shortest.pollution_zone_share), fmtShare(clean.pollution_zone_share)]);
     var body = $('compare-body');
     clearChildren(body);
     rows.forEach(function (r) {
@@ -903,23 +1068,30 @@
     return heat.features.length;
   }
 
-  // ---- traffic layer ----
+  // ---- traffic status ----
 
   var trafficLive = false;
   var trafficOn = false;
   var trafficTouched = false;
   var trafficFetchedAt = 0;
+  var trafficClockText = '';
+  var trafficSource = '';
 
   function trafficVisible() { return trafficLive && trafficOn; }
 
   // Off the page entirely unless the feed is live. On by default for people with asthma.
   function syncTraffic() {
-    if (!trafficTouched) trafficOn = state.asthma;
+    if (!trafficTouched) {
+      var next = state.asthma;
+      if (next && !trafficOn) scheduleHotspots(0);
+      trafficOn = next;
+    }
     $('traffic-toggle').checked = trafficOn;
     show($('traffic-switch'), trafficLive);
-    show($('legend-traffic'), trafficVisible());
+    show($('legend-ring'), trafficVisible());
     show($('traffic-status'), trafficLive);
-    setLayerVisible('traffic', trafficVisible());
+    syncHotspotLayers();
+    renderStatsFoot();
   }
 
   function trafficClock(iso) {
@@ -930,7 +1102,7 @@
 
   function endTraffic() {
     trafficLive = false;
-    setMapData('traffic', emptyLines());
+    setMapData('hotTraffic', emptyLines());
     syncTraffic();
   }
 
@@ -950,24 +1122,101 @@
     }
     trafficLive = true;
     trafficFetchedAt = Date.now();
-    var traffic = emptyLines();
-    (Array.isArray(data.segments) ? data.segments : []).forEach(function (seg) {
-      if (!seg || !Array.isArray(seg.c) || seg.c.length < 2 || !isNum(seg.level)) return;
-      traffic.features.push(lineFeature(seg.c, { level: Math.max(0, Math.min(seg.level, 1)) }));
-    });
-    setMapData('traffic', traffic);
-    var clock = trafficClock(data.updated);
-    $('traffic-status').textContent = (clock ? 'Traffic updated ' + clock : 'Traffic') + (data.source ? ' \u00b7 ' + data.source : '');
+    trafficClockText = trafficClock(data.updated);
+    trafficSource = data.source || '';
+    $('traffic-status').textContent = (trafficClockText ? 'Traffic updated ' + trafficClockText : 'Traffic') + (trafficSource ? ' \u00b7 ' + trafficSource : '');
     syncTraffic();
+    if (trafficVisible()) loadHotspots('traffic');
+  }
+
+  // ---- hotspot circles ----
+
+  var hotspotChannels = { trees: newChannel(), traffic: newChannel() };
+  var hotspotErrors = { trees: '', traffic: '' };
+  var hotspotZoom = null;
+  var hotspotTimer = null;
+
+  function setLayersVisible(ids, visible) {
+    ids.forEach(function (id) { setLayerVisible(id, visible); });
+  }
+
+  function syncHotspotLayers() {
+    setLayersVisible(['trees-halo', 'trees-ring', 'trees-glow', 'trees-core'], state.treesOn);
+    setLayersVisible(['traffic-halo', 'traffic-outer', 'traffic-ring'], trafficVisible());
+  }
+
+  function scheduleHotspots(delay) {
+    clearTimeout(hotspotTimer);
+    hotspotTimer = setTimeout(function () {
+      if (state.treesOn) loadHotspots('trees');
+      if (trafficVisible()) loadHotspots('traffic');
+    }, delay);
+  }
+
+  function hotspotFeatures(cells) {
+    var usable = cells.filter(function (c) { return c && isPoint(c.point) && isNum(c.level); });
+    var most = usable.reduce(function (top, c) { return Math.max(top, isNum(c.count) ? c.count : 0); }, 0);
+    return {
+      type: 'FeatureCollection',
+      features: usable.map(function (c) {
+        return {
+          type: 'Feature',
+          properties: {
+            level: Math.max(0, Math.min(c.level, 1)),
+            // Square root, so a cell's area rather than its width tracks its count.
+            s: most > 0 && isNum(c.count) ? Math.sqrt(Math.max(c.count, 0) / most) : 0
+          },
+          geometry: { type: 'Point', coordinates: toLngLat(c.point) }
+        };
+      })
+    };
+  }
+
+  function renderHotspotStatus(treeCells) {
+    var message = hotspotErrors.trees || hotspotErrors.traffic;
+    var note = message;
+    if (!note && state.treesOn && treeCells === 0) note = 'No tree hotspots for these settings.';
+    setStatus($('hotspot-status'), note, Boolean(message));
+    show($('hotspot-retry'), Boolean(message));
+  }
+
+  async function loadHotspots(kind) {
+    if (!map) return;
+    hotspotZoom = Math.floor(map.getZoom());
+    var params = new URLSearchParams();
+    params.set('kind', kind);
+    params.set('zoom', String(hotspotZoom));
+    if (kind === 'trees') {
+      if (state.monthOverride) params.set('month', String(state.monthOverride));
+      if (state.groups) params.set('groups', state.groups.join(','));
+    }
+    var source = kind === 'trees' ? 'hotTrees' : 'hotTraffic';
+    var data;
+    try {
+      data = await latest(hotspotChannels[kind], '/api/hotspots?' + params.toString(), {}, ROUTE_TIMEOUT);
+    } catch (e) {
+      // Old circles describe other settings, so they go too.
+      setMapData(source, emptyLines());
+      hotspotErrors[kind] = (kind === 'trees' ? 'Tree circles failed: ' : 'Traffic circles failed: ') + e.message;
+      renderHotspotStatus(null);
+      return;
+    }
+    if (data === STALE) return;
+    hotspotErrors[kind] = '';
+    var cells = Array.isArray(data.cells) ? data.cells : [];
+    setMapData(source, hotspotFeatures(cells));
+    if (kind === 'trees' && data.query) {
+      $('hotspot-query').textContent = JSON.stringify(data.query, null, 2);
+      show($('hotspot-query-block'), true);
+    }
+    renderHotspotStatus(kind === 'trees' ? cells.length : null);
   }
 
   function renderLegendSteps() {
-    [[$('legend-steps'), HEAT_COLORS], [$('traffic-steps'), TRAFFIC_COLORS]].forEach(function (pair) {
-      pair[1].forEach(function (color) {
-        var step = el('span');
-        step.style.background = color;
-        pair[0].appendChild(step);
-      });
+    HOTSPOT_COLORS.forEach(function (color) {
+      var step = el('span');
+      step.style.background = color;
+      $('legend-steps').appendChild(step);
     });
   }
 
@@ -991,6 +1240,7 @@
   function requestLocation() {
     if (locationAsked) return;
     locationAsked = true;
+    state.locationFailed = false;
     if (!navigator.geolocation) {
       locationFailed();
       return;
@@ -1017,7 +1267,7 @@
         }
         updateHint();
       });
-    }, locationFailed, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 });
+    }, locationFailed, { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 });
   }
 
   function noStartMessage() {
@@ -1047,28 +1297,9 @@
     applyParsed(data);
   }
 
-  async function sendDestination(text) {
-    setAskBusy(true);
-    show($('transcript'), false);
-    var data;
-    try {
-      data = await latest(askChannel, '/api/geocode', jsonPost({ text: text }), ROUTE_TIMEOUT);
-      if (data !== STALE && !isPoint(data.point)) throw new Error('the server response was incomplete.');
-    } catch (e) {
-      // A sentence such as "from X to Y" isn't a place name, so it gets a second reading.
-      if (e.status === 404 && text.split(/\s+/).length >= 4) {
-        tryAsSentence(text, e.message);
-        return;
-      }
-      setAskBusy(false);
-      setStatus($('ask-status'), e.status === 404 ? e.message : "Couldn't look that up: " + e.message, true);
-      return;
-    }
-    if (data === STALE) return;
-    setAskBusy(false);
-
-    setPoint('end', data.point);
-    state.placeNames = 'To ' + (data.name || text);
+  function goToPlace(point, name) {
+    setPoint('end', point);
+    state.placeNames = 'To ' + name;
     $('preset').value = '';
     updateHint();
     if (!state.start) {
@@ -1079,17 +1310,180 @@
     runRoute();
   }
 
-  async function tryAsSentence(text, notFound) {
-    var data = null;
+  async function sendDestination(text) {
+    setAskBusy(true);
+    var data;
     try {
-      data = await latest(askChannel, '/api/parse', jsonPost({ text: text }), ROUTE_TIMEOUT);
-    } catch (_) {
-      data = null;
+      data = await latest(askChannel, '/api/geocode', jsonPost({ text: text }), ROUTE_TIMEOUT);
+      if (data !== STALE && !isPoint(data.point)) throw new Error('the server response was incomplete.');
+    } catch (e) {
+      setAskBusy(false);
+      setStatus($('ask-status'), e.status === 404 ? e.message : "Couldn't look that up: " + e.message, true);
+      return;
     }
     if (data === STALE) return;
     setAskBusy(false);
-    if (data && (isPoint(data.start) || isPoint(data.end))) applyParsed(data);
-    else setStatus($('ask-status'), notFound, true);
+    goToPlace(data.point, data.name || text);
+  }
+
+  // ---- place search ----
+
+  var LEADING_WORDS = /^\s*(please\s+)?((take|walk|get|bring)\s+me\s+to|go\s+to|walk\s+to|directions\s+to)\s+/i;
+  var placesChannel = newChannel();
+  var placeTimer = null;
+  var placeResults = [];
+  var placeActive = -1;
+  var placeQuery = '';
+
+  function placeText(raw) { return raw.replace(LEADING_WORDS, '').trim(); }
+
+  // Only a real sentence goes to the slower parser: everything else is a place search.
+  function isSentence(raw) {
+    return /\b(allerg\w*|asthma)\b|\bi'?m\b/i.test(raw)
+      || /\b(take|walk|bring|get)\s+me\s+from\b/i.test(raw)
+      || /\bfrom\b.+\bto\b/i.test(raw);
+  }
+
+  function placesUrl(query) {
+    var params = new URLSearchParams();
+    params.set('q', query);
+    if (state.start) {
+      params.set('lat', String(state.start[0]));
+      params.set('lon', String(state.start[1]));
+    }
+    return '/api/places?' + params.toString();
+  }
+
+  function usablePlaces(data) {
+    return (data && Array.isArray(data.results) ? data.results : []).filter(function (r) {
+      return r && r.name && isPoint(r.point);
+    }).slice(0, 8);
+  }
+
+  function closePlaces() {
+    clearTimeout(placeTimer);
+    cancel(placesChannel);
+    placeResults = [];
+    placeActive = -1;
+    placeQuery = '';
+    clearChildren($('place-list'));
+    show($('place-list'), false);
+    var input = $('ask-input');
+    input.setAttribute('aria-expanded', 'false');
+    input.removeAttribute('aria-activedescendant');
+  }
+
+  function renderPlaces() {
+    var list = $('place-list');
+    var input = $('ask-input');
+    clearChildren(list);
+    placeResults.forEach(function (place, i) {
+      var li = el('li', { className: 'place-option' });
+      li.id = 'place-' + i;
+      li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', i === placeActive ? 'true' : 'false');
+      li.appendChild(el('span', { className: 'place-name', text: place.name }));
+      if (place.detail) li.appendChild(el('span', { className: 'place-detail', text: place.detail }));
+      // Keep focus in the box, so the blur doesn't close the list before the click lands.
+      li.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      li.addEventListener('click', function () { choosePlace(place); });
+      list.appendChild(li);
+    });
+    var open = placeResults.length > 0;
+    show(list, open);
+    input.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (placeActive >= 0) input.setAttribute('aria-activedescendant', 'place-' + placeActive);
+    else input.removeAttribute('aria-activedescendant');
+  }
+
+  function choosePlace(place) {
+    $('ask-input').value = place.name;
+    closePlaces();
+    setStatus($('ask-status'), '');
+    show($('transcript'), false);
+    goToPlace(place.point, place.name);
+  }
+
+  function onPlaceInput() {
+    var raw = $('ask-input').value;
+    var query = placeText(raw);
+    clearTimeout(placeTimer);
+    setStatus($('ask-status'), '');
+    if (query.length < 2 || isSentence(raw)) {
+      closePlaces();
+      return;
+    }
+    placeTimer = setTimeout(async function () {
+      var data;
+      try {
+        data = await latest(placesChannel, placesUrl(query), {}, 5000);
+      } catch (_) {
+        // Suggestions are a convenience. Pressing Go still reports what went wrong.
+        placeResults = [];
+        placeActive = -1;
+        renderPlaces();
+        return;
+      }
+      if (data === STALE) return;
+      placeResults = usablePlaces(data);
+      placeActive = -1;
+      placeQuery = query;
+      renderPlaces();
+    }, 150);
+  }
+
+  function onPlaceKey(e) {
+    if (e.key === 'Escape') {
+      if (placeResults.length) e.preventDefault();
+      closePlaces();
+      return;
+    }
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    if (!placeResults.length) return;
+    e.preventDefault();
+    var step = e.key === 'ArrowDown' ? 1 : -1;
+    var count = placeResults.length;
+    if (placeActive < 0) placeActive = step > 0 ? 0 : count - 1;
+    else placeActive = (placeActive + step + count) % count;
+    renderPlaces();
+    $('place-' + placeActive).scrollIntoView({ block: 'nearest' });
+  }
+
+  async function submitWhereTo(raw) {
+    if (placeActive >= 0 && placeResults[placeActive]) {
+      choosePlace(placeResults[placeActive]);
+      return;
+    }
+    if (isSentence(raw)) {
+      closePlaces();
+      sendAsk('/api/parse', jsonPost({ text: raw }), ROUTE_TIMEOUT);
+      return;
+    }
+    var query = placeText(raw);
+    if (query === placeQuery && placeResults.length) {
+      choosePlace(placeResults[0]);
+      return;
+    }
+    closePlaces();
+    show($('transcript'), false);
+    if (query.length >= 2) {
+      // The list may not have arrived yet, so ask for the first result now.
+      var data = null;
+      setAskBusy(true);
+      try {
+        data = await latest(placesChannel, placesUrl(query), {}, 5000);
+      } catch (_) {
+        data = null; // the geocoder below gives the real answer or the real error
+      }
+      if (data === STALE) return;
+      setAskBusy(false);
+      var first = usablePlaces(data)[0];
+      if (first) {
+        choosePlace(first);
+        return;
+      }
+    }
+    sendDestination(query);
   }
 
   function applyParsed(data) {
@@ -1164,6 +1558,7 @@
 
     updateHint();
     scheduleHeat(0);
+    scheduleHotspots(0);
     if (state.start && state.end) {
       if (moved) fitOnNextRoute = true;
       runRoute();
@@ -1180,8 +1575,11 @@
         input.focus();
         return;
       }
-      sendDestination(text);
+      submitWhereTo(text);
     });
+    input.addEventListener('input', onPlaceInput);
+    input.addEventListener('keydown', onPlaceKey);
+    input.addEventListener('blur', closePlaces);
     makeMic({
       button: $('mic'),
       label: $('mic-label'),
@@ -1364,6 +1762,7 @@
       $('profile-error-text').textContent = "Couldn't load your profile: " + e.message + ' Choose your trees by hand below.';
       show($('profile-error'), true);
       scheduleHeat(0);
+      scheduleHotspots(0);
       scheduleRoute(0);
       return;
     }
@@ -1372,6 +1771,7 @@
     state.profileDirty = false;
     renderProfileSummary();
     scheduleHeat(0);
+    scheduleHotspots(0);
     scheduleRoute(0);
   }
 
@@ -1388,6 +1788,7 @@
     syncMode();
     syncTraffic();
     scheduleHeat(0);
+    scheduleHotspots(0);
     scheduleRoute(0);
     requestLocation();
     $('ask-input').focus();
@@ -1437,6 +1838,7 @@
     $('ob-asthma').checked = Boolean(p.asthma);
     renderList($('ob-reasons-block'), $('ob-reasons'), p.reasons);
     renderList($('ob-not-covered-block'), $('ob-not-covered'), p.not_covered);
+    renderSymptoms();
   }
 
   function renderList(block, list, items) {
@@ -1610,22 +2012,16 @@
         setStatus($('symptom-status'), 'Describe your symptoms first.', true);
         return;
       }
-      state.lastSymptomText = text;
       runSymptoms(text);
     });
   }
 
   async function runSymptoms(text) {
-    var payload = { text: text };
-    if (state.monthOverride) payload.month = state.monthOverride;
-    var cleanCoords = state.route && state.route.clean && state.route.clean.coords;
-    if (cleanCoords && cleanCoords.length) payload.coords = cleanCoords;
-
-    setStatus($('symptom-status'), '');
+    setStatus($('symptom-status'), 'Searching...');
     $('symptom-submit').disabled = true;
     var data;
     try {
-      data = await latest(symptomChannel, '/api/symptoms', jsonPost(payload), ROUTE_TIMEOUT);
+      data = await latest(symptomChannel, '/api/symptoms', jsonPost({ text: text }), ROUTE_TIMEOUT);
     } catch (e) {
       $('symptom-submit').disabled = false;
       clearChildren($('symptom-results'));
@@ -1636,26 +2032,35 @@
     if (data === STALE) return;
     $('symptom-submit').disabled = false;
     setStatus($('symptom-status'), '');
-    renderSymptoms(data, Boolean(payload.coords));
+    state.symptomResults = data;
+    renderSymptoms();
   }
 
-  function renderSymptoms(data, hasRoute) {
+  // One row per tree group the routes can avoid, with a button that adds it to the profile.
+  function renderSymptoms() {
+    var data = state.symptomResults;
+    if (!data) return;
     var list = $('symptom-results');
     clearChildren(list);
-    var suggestions = Array.isArray(data.suggestions) ? data.suggestions : [];
-    if (!suggestions.length) {
-      setStatus($('symptom-status'), 'No matching trees found for that description.');
-    }
-    suggestions.forEach(function (s) {
+    var known = ((state.meta && state.meta.groups) || []).map(function (g) { return g.id; });
+    var seen = {};
+    var rows = (Array.isArray(data.suggestions) ? data.suggestions : []).filter(function (s) {
+      if (known.indexOf(s.group) < 0 || seen[s.group]) return false;
+      seen[s.group] = true;
+      return true;
+    });
+    if (!rows.length) setStatus($('symptom-status'), 'No matching trees found for that description.');
+    var picked = (state.profile && state.profile.groups) || [];
+    rows.forEach(function (s) {
+      var added = picked.indexOf(s.group) >= 0;
       var li = el('li', { className: 'suggestion' });
       var head = el('div', { className: 'suggestion-head' });
       head.appendChild(el('span', { className: 'suggestion-name', text: s.common || s.species || 'Unknown tree' }));
-      if (hasRoute && isNum(s.trees_on_route)) {
-        head.appendChild(el('span', {
-          className: 'suggestion-count',
-          text: plural(s.trees_on_route, 'tree') + ' on route'
-        }));
-      }
+      var add = el('button', { className: 'btn btn-small', text: added ? 'Added' : 'Add' });
+      add.type = 'button';
+      add.setAttribute('aria-pressed', added ? 'true' : 'false');
+      add.addEventListener('click', function () { toggleProfileGroup(s.group); });
+      head.appendChild(add);
       li.appendChild(head);
       if (s.why) li.appendChild(el('p', { className: 'suggestion-why', text: s.why }));
       list.appendChild(li);
@@ -1706,6 +2111,7 @@
       renderBadges();
       syncMonth();
       renderProfileSummary();
+      renderStatsFoot();
       if (!$('ob-confirm').hidden) renderConfirm();
       if (Array.isArray(meta.bounds) && isPoint(meta.bounds[0]) && isPoint(meta.bounds[1])) {
         homeBounds = meta.bounds;
@@ -1726,6 +2132,7 @@
       show($('meta-error'), true);
       return;
     }
+    initSidebar();
     initMap();
     renderLegendSteps();
     renderChips();

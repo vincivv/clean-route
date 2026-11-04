@@ -3,18 +3,56 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
   <title>Clean Route</title>
   <meta name="description" content="Walk San Francisco with less of the pollen that sets you off.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.css">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
   <div id="app" class="app">
-    <main class="layout">
-      <aside class="panel" aria-label="Route planner">
+    <div id="map" aria-label="Map of San Francisco. Click to set a start, then an end."></div>
+    <div id="map-progress" class="map-progress" hidden></div>
+    <p id="map-progress-label" class="map-progress-label" role="status" hidden>Finding your route</p>
+    <div id="map-hint" class="map-hint" hidden>
+      <span id="map-hint-text"></span>
+      <button id="location-retry" type="button" class="link" hidden>Try again</button>
+    </div>
+
+    <div class="rail">
+      <section class="search-card" aria-label="Where to">
+        <form id="ask-form">
+          <label for="ask-input" class="visually-hidden">Where to?</label>
+          <div class="ask-row">
+            <input id="ask-input" type="text" autocomplete="off" placeholder="Where to?" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="place-list">
+            <button id="mic" type="button" class="btn btn-mic" aria-label="Speak your destination">
+              <svg class="mic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 0 0-7 0v6A3.5 3.5 0 0 0 12 15Z"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3.5" fill="none"/></svg>
+              <span id="mic-label" class="mic-label">Speak</span>
+            </button>
+            <button id="ask-submit" type="submit" class="btn btn-primary">Go</button>
+            <ul id="place-list" class="place-list" role="listbox" aria-label="Matching places" hidden></ul>
+          </div>
+        </form>
+        <div class="search-row">
+          <button id="sidebar-toggle" type="button" class="sidebar-toggle" aria-controls="sidebar" aria-expanded="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM10 5v14" fill="none"/></svg>
+            <span id="sidebar-toggle-label">Hide details</span>
+          </button>
+          <button id="clear-route" type="button" class="link" hidden>Clear start and end</button>
+        </div>
+        <p id="mic-note" class="status" hidden></p>
+        <p id="ask-status" class="status" role="status" hidden></p>
+        <p id="transcript" class="transcript" hidden></p>
+        <div id="route-error" class="notice notice-error" role="alert" hidden>
+          <p id="route-error-text"></p>
+          <button id="route-retry" type="button" class="btn btn-small">Try again</button>
+        </div>
+      </section>
+
+      <aside id="sidebar" class="sidebar" aria-label="Details">
         <header class="masthead">
           <div class="masthead-row">
             <h1>Clean Route</h1>
@@ -41,47 +79,7 @@
           <button id="profile-edit" type="button" class="link" hidden>Edit</button>
         </div>
 
-        <section class="ask" aria-label="Where to">
-          <form id="ask-form">
-            <label for="ask-input" class="ask-label">Where to?</label>
-            <div class="ask-row">
-              <input id="ask-input" type="text" autocomplete="off" placeholder="Dolores Park">
-              <button id="mic" type="button" class="btn btn-mic">
-                <svg class="mic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 0 0-7 0v6A3.5 3.5 0 0 0 12 15Z"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3.5" fill="none"/></svg>
-                <span id="mic-label">Speak</span>
-              </button>
-              <button id="ask-submit" type="submit" class="btn btn-primary">Go</button>
-            </div>
-          </form>
-          <p id="mic-note" class="status" hidden></p>
-          <p id="ask-status" class="status" role="status" hidden></p>
-          <p id="transcript" class="transcript" hidden></p>
-        </section>
-
-        <section id="result" class="result" aria-label="Route result" aria-live="polite">
-          <p id="result-empty" class="result-empty">Enter a destination to compare routes, or click the map.</p>
-          <div id="route-error" class="notice notice-error" role="alert" hidden>
-            <p id="route-error-text"></p>
-            <button id="route-retry" type="button" class="btn btn-small">Try again</button>
-          </div>
-          <div id="hero" class="hero" hidden>
-            <div id="hero-gain">
-              <p class="hero-pct"><span id="hero-pct-value"></span></p>
-              <p id="hero-pct-label" class="hero-pct-label">less estimated exposure</p>
-              <p id="hero-wide" class="hero-same-detail"></p>
-              <p id="hero-off-title" class="hero-same-title" hidden></p>
-              <p id="hero-off-detail" class="hero-same-detail" hidden></p>
-              <p id="hero-time" class="hero-time"></p>
-            </div>
-            <div id="hero-same" hidden>
-              <p class="hero-same-title">The shortest route is already the cleanest.</p>
-              <p id="hero-same-detail" class="hero-same-detail"></p>
-            </div>
-            <p id="hero-context" class="hero-context"></p>
-          </div>
-        </section>
-
-        <section class="controls" aria-label="Season and map options">
+        <section class="controls" aria-label="Season and allergies">
           <div id="manual-controls" class="manual-controls" hidden>
             <div class="field">
               <span class="field-label" id="chips-label">Trees that set you off</span>
@@ -101,14 +99,10 @@
             </div>
           </div>
 
-          <label class="switch"><span>Street exposure layer</span><input id="heat-toggle" type="checkbox" role="switch" checked></label>
-
           <div class="field" id="preset-field" hidden>
             <label for="preset" class="field-label">Preset walk</label>
             <select id="preset"><option value="">Choose a preset</option></select>
           </div>
-
-          <button id="clear-route" type="button" class="link" hidden>Clear start and end</button>
         </section>
 
         <section id="details" class="details" aria-label="Route comparison" hidden>
@@ -140,61 +134,73 @@
             <h2>Why this route</h2>
             <p id="explanation" class="explanation"></p>
           </div>
+        </section>
 
-          <details class="query">
+        <section class="queries" aria-label="Elastic queries">
+          <details id="route-query" class="query" hidden>
             <summary>Show the Elastic query</summary>
             <pre id="elastic-query" tabindex="0"></pre>
           </details>
-        </section>
-
-        <section class="symptoms" aria-label="Symptom search">
-          <form id="symptom-form">
-            <label for="symptom-input" class="field-label">Describe your symptoms</label>
-            <div class="symptom-row">
-              <input id="symptom-input" type="text" placeholder="My eyes itch every March" autocomplete="off">
-              <button id="symptom-submit" type="submit" class="btn">Search</button>
-            </div>
-          </form>
-          <p id="symptom-status" class="status" role="status" hidden></p>
-          <ul id="symptom-results" class="suggestions"></ul>
-          <p id="symptom-note" class="symptom-note" hidden></p>
+          <details id="hotspot-query-block" class="query" hidden>
+            <summary>Show the hotspot query</summary>
+            <pre id="hotspot-query" tabindex="0"></pre>
+          </details>
         </section>
       </aside>
+    </div>
 
-      <div class="map-wrap">
-        <div id="map" aria-label="Map of San Francisco. Click to set a start, then an end."></div>
-        <div id="map-progress" class="map-progress" hidden></div>
-        <p id="map-progress-label" class="map-progress-label" role="status" hidden>Finding your route</p>
-        <p id="map-hint" class="map-hint" hidden></p>
-        <div class="legend">
-          <div class="legend-routes">
-            <span class="legend-item"><span class="legend-line legend-line-clean" aria-hidden="true"></span>Clean</span>
-            <span class="legend-item"><span class="legend-line legend-line-short" aria-hidden="true"></span>Shortest</span>
-          </div>
-          <div id="legend-heat" class="legend-heat">
-            <span class="legend-title">Street exposure</span>
-            <div class="legend-scale">
-              <span>Low</span>
-              <span id="legend-steps" class="legend-steps" aria-hidden="true"></span>
-              <span>High</span>
-            </div>
-          </div>
-          <div id="legend-traffic" class="legend-heat" hidden>
-            <span class="legend-title">Congestion</span>
-            <div class="legend-scale">
-              <span>Low</span>
-              <span id="traffic-steps" class="legend-steps" aria-hidden="true"></span>
-              <span>High</span>
-            </div>
-          </div>
-          <label id="traffic-switch" class="switch switch-small" hidden><span>Live traffic</span><input id="traffic-toggle" type="checkbox" role="switch"></label>
-          <p id="traffic-status" class="legend-note" hidden></p>
-          <p id="tile-status" class="legend-status" role="status" hidden></p>
-          <p id="heat-status" class="legend-status" role="status" hidden></p>
-          <button id="heat-retry" type="button" class="btn btn-small" hidden>Try again</button>
+    <section class="layers" aria-label="Map layers">
+      <label class="check"><input id="trees-toggle" type="checkbox" checked><span>Allergenic trees</span></label>
+      <label id="traffic-switch" class="check" hidden><input id="traffic-toggle" type="checkbox"><span>Traffic</span></label>
+      <label class="check"><input id="heat-toggle" type="checkbox"><span>Street detail</span></label>
+
+      <div class="legend">
+        <div class="legend-scale">
+          <span>Low</span>
+          <span id="legend-steps" class="legend-steps" aria-hidden="true"></span>
+          <span>High</span>
+        </div>
+        <div class="legend-marks">
+          <span class="legend-item"><span class="mark-filled" aria-hidden="true"></span>Trees</span>
+          <span id="legend-ring" class="legend-item" hidden><span class="mark-ring" aria-hidden="true"></span>Traffic</span>
+        </div>
+        <div class="legend-marks">
+          <span class="legend-item"><span class="legend-line legend-line-clean" aria-hidden="true"></span>Clean</span>
+          <span class="legend-item"><span class="legend-line legend-line-short" aria-hidden="true"></span>Shortest</span>
         </div>
       </div>
-    </main>
+
+      <p id="traffic-status" class="legend-note" hidden></p>
+      <p id="hotspot-status" class="legend-status" role="status" hidden></p>
+      <button id="hotspot-retry" type="button" class="btn btn-small" hidden>Try again</button>
+      <p id="tile-status" class="legend-status" role="status" hidden></p>
+      <p id="heat-status" class="legend-status" role="status" hidden></p>
+      <button id="heat-retry" type="button" class="btn btn-small" hidden>Try again</button>
+    </section>
+
+    <section id="stats" class="stats" aria-label="Route result" aria-live="polite" hidden>
+      <div class="stat">
+        <p id="stat-pollen-title" class="stat-title" hidden></p>
+        <div id="stat-pollen-head" class="stat-head">
+          <span id="stat-pollen-value" class="stat-value"></span>
+          <span id="stat-pollen-label" class="stat-label"></span>
+        </div>
+        <div id="stat-pollen-track" class="stat-track"><span id="stat-pollen-bar" class="stat-bar stat-bar-pollen"></span></div>
+        <p id="stat-pollen-note" class="stat-note"></p>
+      </div>
+      <div id="stat-air" class="stat" hidden>
+        <p id="stat-air-title" class="stat-title" hidden>No cleaner air option on this walk</p>
+        <div id="stat-air-head" class="stat-head">
+          <span id="stat-air-value" class="stat-value"></span>
+          <span class="stat-label">Less estimated traffic pollution</span>
+        </div>
+        <div id="stat-air-track" class="stat-track"><span id="stat-air-bar" class="stat-bar stat-bar-air"></span></div>
+        <p id="stat-air-note" class="stat-note"></p>
+      </div>
+      <p id="stat-time" class="stat-time"></p>
+      <p id="stat-context" class="stat-note"></p>
+      <p id="stat-foot" class="stat-foot"></p>
+    </section>
 
     <footer class="footer">
       <p>Estimated exposure from street tree records. Not live pollen. Not medical advice.</p>
@@ -238,6 +244,20 @@
           <p id="ob-empty-note" class="small" hidden>No trees selected. Routes will count every tree.</p>
         </div>
 
+        <details class="ob-unsure">
+          <summary>Not sure which trees affect you?</summary>
+          <form id="symptom-form">
+            <label for="symptom-input" class="field-label">Describe what happens and when</label>
+            <div class="symptom-row">
+              <input id="symptom-input" type="text" placeholder="My eyes itch every March" autocomplete="off">
+              <button id="symptom-submit" type="submit" class="btn">Search</button>
+            </div>
+          </form>
+          <p id="symptom-status" class="status" role="status" hidden></p>
+          <ul id="symptom-results" class="suggestions"></ul>
+          <p id="symptom-note" class="symptom-note" hidden></p>
+        </details>
+
         <label class="switch"><span>I have asthma</span><input id="ob-asthma" type="checkbox" role="switch"></label>
 
         <div id="ob-reasons-block" class="ob-list-block" hidden>
@@ -262,6 +282,6 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>
