@@ -1,6 +1,6 @@
 # 2-minute pitch
 
-**Before you go up:** open the app and run the demo route once. Allow location if you want to route from where you are. Keep `docs/demo/backup_voice_clip.wav` ready in case the mic fails (it's a synthetic voice, so say so if you play it).
+**Before you go up:** open `localhost:8000` (the landing page), click Open the map, and run the demo route once. Allow location if you want to route from where you are. Keep `docs/demo/backup_voice_clip.wav` ready in case the mic fails (it's a synthetic voice, so say so if you play it).
 
 **Best demo route right now:** 33 New Montgomery to Dolores Park, which starts at the venue. At 7:05 PM, planning for April with plane and olive, it showed 67% less pollen and 45% less traffic pollution for 2.5 more minutes (94% pollen without asthma, which ignores traffic). Live traffic changes those numbers, so read them from the screen.
 

@@ -738,6 +738,13 @@
       runRoute();
     });
     $('clear-route').addEventListener('click', clearWalk);
+    // There are no accounts: signing out forgets this browser's profile and returns to the landing page.
+    $('sign-out').addEventListener('click', function () {
+      clearTimeout(putTimer);
+      putTimer = null;
+      storeClear();
+      window.location.href = './';
+    });
     $('route-retry').addEventListener('click', function () { runRoute(); });
     $('heat-retry').addEventListener('click', function () { scheduleHeat(0); });
     $('meta-retry').addEventListener('click', loadMeta);
@@ -1725,6 +1732,7 @@
     var summary = $('profile-summary');
     var edit = $('profile-edit');
     show(edit, true);
+    show($('sign-out'), Boolean(state.profile));
     if (!state.profile) {
       summary.textContent = 'No profile. Choosing trees by hand.';
       edit.textContent = 'Set up a profile';
@@ -1741,6 +1749,7 @@
     if (!id) return;
     show($('profile-error'), false);
     show($('profile-edit'), false);
+    show($('sign-out'), false);
     $('profile-summary').textContent = 'Loading your profile...';
     var data;
     try {

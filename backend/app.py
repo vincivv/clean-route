@@ -650,6 +650,27 @@ def hotspots(month: int | None = None, groups: str | None = None):
     return {"cells": cells, "query": query}
 
 
+@app.get("/api/stats")
+def site_stats():
+    """Numbers for the landing page: the saved evaluations, plus live Elastic aggregations when Elastic is up."""
+    data = ROOT / "data"
+    out = {"evaluation": json.loads((data / "evaluation.json").read_text()), "asthma": json.loads((data / "evaluation_asthma.json").read_text()),
+           "today_month": current_month(), "trees": None, "groups": [], "months": []}
+    if not has_elastic():
+        return out
+    r = es().search(index=TREES_INDEX, size=0, track_total_hits=True, aggs={"by_group": {"terms": {"field": "allergen_group", "size": 25}, "aggs": {"weight": {"sum": {"field": "weight"}}}}})
+    buckets = r["aggregations"]["by_group"]["buckets"]
+    trees = r["hits"]["total"]["value"]
+    total = sum(b["weight"]["value"] for b in buckets) or 1.0
+    rated = sorted((b for b in buckets if b["key"] != LOW_ALLERGEN and b["weight"]["value"] > 0), key=lambda b: -b["weight"]["value"])
+    by_month = [sum(b["weight"]["value"] * month_factor(b["key"], m) for b in rated) for m in range(1, 13)]
+    peak = max(by_month) or 1.0
+    out.update(trees=trees, months=[round(v / peak, 3) for v in by_month],
+               groups=[{"id": b["key"], "label": LABELS.get(b["key"], b["key"]), "trees": b["doc_count"], "tree_share": round(b["doc_count"] / trees, 4),
+                        "load_share": round(b["weight"]["value"] / total, 4)} for b in rated])
+    return out
+
+
 @app.get("/api/traffic")
 def traffic():
     return TRAFFIC.status()

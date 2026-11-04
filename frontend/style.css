@@ -359,6 +359,7 @@ select { min-height: 44px; margin-top: 4px; }
   stroke-linejoin: round;
 }
 
+#clear-route { margin-left: auto; }
 .search-row .link { align-self: center; font-size: 14px; color: var(--ink-2); }
 
 .place-list {

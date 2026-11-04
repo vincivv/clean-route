@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Clean Route</title>
+  <meta name="description" content="Walk San Francisco with less of the pollen that sets you off.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.css">
+  <link rel="stylesheet" href="style.css?v=8">
+</head>
+<body>
+  <div id="app" class="app">
+    <div id="map" aria-label="Map of San Francisco. Click to set a start, then an end."></div>
+    <div id="map-progress" class="map-progress" hidden></div>
+    <p id="map-progress-label" class="map-progress-label" role="status" hidden>Finding your route</p>
+    <div id="map-hint" class="map-hint" hidden>
+      <span id="map-hint-text"></span>
+      <button id="location-retry" type="button" class="link" hidden>Try again</button>
+    </div>
+
+    <div class="rail">
+      <section class="search-card" aria-label="Where to">
+        <form id="ask-form">
+          <label for="ask-input" class="visually-hidden">Where to?</label>
+          <div class="ask-row">
+            <input id="ask-input" type="text" autocomplete="off" placeholder="Where to?" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="place-list">
+            <button id="mic" type="button" class="btn btn-mic" aria-label="Speak your destination">
+              <svg class="mic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 0 0-7 0v6A3.5 3.5 0 0 0 12 15Z"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3.5" fill="none"/></svg>
+              <span id="mic-label" class="mic-label">Speak</span>
+            </button>
+            <button id="ask-submit" type="submit" class="btn btn-primary">Go</button>
+            <ul id="place-list" class="place-list" role="listbox" aria-label="Matching places" hidden></ul>
+          </div>
+        </form>
+        <div class="search-row">
+          <button id="sidebar-toggle" type="button" class="sidebar-toggle" aria-controls="sidebar" aria-expanded="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM10 5v14" fill="none"/></svg>
+            <span id="sidebar-toggle-label">Hide details</span>
+          </button>
+          <button id="clear-route" type="button" class="link" hidden>Clear start and end</button>
+          <button id="sign-out" type="button" class="link" hidden>Sign out</button>
+        </div>
+        <p id="mic-note" class="status" hidden></p>
+        <p id="ask-status" class="status" role="status" hidden></p>
+        <p id="transcript" class="transcript" hidden></p>
+        <div id="route-error" class="notice notice-error" role="alert" hidden>
+          <p id="route-error-text"></p>
+          <button id="route-retry" type="button" class="btn btn-small">Try again</button>
+        </div>
+      </section>
+
+      <aside id="sidebar" class="sidebar" aria-label="Details">
+        <header class="masthead">
+          <div class="masthead-row">
+            <h1>Clean Route</h1>
+            <div id="air" class="air" hidden>
+              <span id="air-values" class="air-values"></span>
+              <span id="air-source" class="air-source"></span>
+            </div>
+          </div>
+          <p class="tagline">Walk SF with less of the pollen that sets you off.</p>
+        </header>
+
+        <div id="meta-error" class="notice notice-error" role="alert" hidden>
+          <p id="meta-error-text"></p>
+          <button id="meta-retry" type="button" class="btn btn-small">Try again</button>
+        </div>
+
+        <div id="profile-error" class="notice notice-error" role="alert" hidden>
+          <p id="profile-error-text"></p>
+          <button id="profile-retry" type="button" class="btn btn-small">Try again</button>
+        </div>
+
+        <div class="profile-bar">
+          <p id="profile-summary" class="profile-summary"></p>
+          <button id="profile-edit" type="button" class="link" hidden>Edit</button>
+        </div>
+
+        <section class="controls" aria-label="Season and allergies">
+          <div id="manual-controls" class="manual-controls" hidden>
+            <div class="field">
+              <span class="field-label" id="chips-label">Trees that set you off</span>
+              <div id="chips" class="chips" role="group" aria-labelledby="chips-label"></div>
+            </div>
+            <label class="switch"><span>I have asthma</span><input id="asthma" type="checkbox" role="switch"></label>
+          </div>
+
+          <div class="field month-field">
+            <p class="month-now"><span id="month-value" class="month-value"></span><span id="month-tag" class="month-tag" hidden>Planning ahead</span></p>
+            <p id="bloom-note" class="small"></p>
+            <button id="month-plan" type="button" class="link">Plan for another month</button>
+            <div id="month-picker" class="month-picker" hidden>
+              <label for="month-select" class="visually-hidden">Month</label>
+              <select id="month-select"></select>
+              <button id="month-today" type="button" class="link">Back to today</button>
+            </div>
+          </div>
+
+          <div class="field" id="preset-field" hidden>
+            <label for="preset" class="field-label">Preset walk</label>
+            <select id="preset"><option value="">Choose a preset</option></select>
+          </div>
+        </section>
+
+        <section id="details" class="details" aria-label="Route comparison" hidden>
+          <h2>Side by side</h2>
+          <table class="compare">
+            <thead>
+              <tr>
+                <th scope="col"><span class="visually-hidden">Measure</span></th>
+                <th scope="col" class="num"><span class="swatch swatch-short" aria-hidden="true"></span>Shortest</th>
+                <th scope="col" class="num"><span class="swatch swatch-clean" aria-hidden="true"></span>Clean</th>
+              </tr>
+            </thead>
+            <tbody id="compare-body"></tbody>
+          </table>
+
+          <h2>Main trees near each route</h2>
+          <div class="species-grid">
+            <div>
+              <h3>Shortest</h3>
+              <ul id="species-short" class="species"></ul>
+            </div>
+            <div>
+              <h3>Clean</h3>
+              <ul id="species-clean" class="species"></ul>
+            </div>
+          </div>
+
+          <div id="explanation-block" class="explanation-block" hidden>
+            <h2>Why this route</h2>
+            <p id="explanation" class="explanation"></p>
+          </div>
+        </section>
+
+        <section class="queries" aria-label="Elastic queries">
+          <details id="route-query" class="query" hidden>
+            <summary>Show the Elastic query</summary>
+            <pre id="elastic-query" tabindex="0"></pre>
+          </details>
+          <details id="hotspot-query-block" class="query" hidden>
+            <summary>Show the hotspot query</summary>
+            <pre id="hotspot-query" tabindex="0"></pre>
+          </details>
+        </section>
+      </aside>
+    </div>
+
+    <section class="layers" aria-label="Map layers">
+      <label class="check"><input id="trees-toggle" type="checkbox" checked><span>Allergenic trees</span></label>
+      <label id="traffic-switch" class="check" hidden><input id="traffic-toggle" type="checkbox"><span>Traffic</span></label>
+      <label class="check"><input id="heat-toggle" type="checkbox"><span>Street detail</span></label>
+
+      <div class="legend">
+        <div class="legend-scale">
+          <span>Low</span>
+          <span id="legend-steps" class="legend-steps" aria-hidden="true"></span>
+          <span>High</span>
+        </div>
+        <div class="legend-marks">
+          <span class="legend-item"><span class="mark-filled" aria-hidden="true"></span>Trees</span>
+          <span id="legend-ring" class="legend-item" hidden><span class="legend-line legend-line-traffic" aria-hidden="true"></span>Heavy traffic</span>
+        </div>
+        <div class="legend-marks">
+          <span class="legend-item"><span class="legend-line legend-line-clean" aria-hidden="true"></span>Clean</span>
+          <span class="legend-item"><span class="legend-line legend-line-short" aria-hidden="true"></span>Shortest</span>
+        </div>
+      </div>
+
+      <p class="legend-note">Faded circles: out of season</p>
+      <p id="traffic-status" class="legend-note" hidden></p>
+      <p id="hotspot-status" class="legend-status" role="status" hidden></p>
+      <button id="hotspot-retry" type="button" class="btn btn-small" hidden>Try again</button>
+      <p id="tile-status" class="legend-status" role="status" hidden></p>
+      <p id="heat-status" class="legend-status" role="status" hidden></p>
+      <button id="heat-retry" type="button" class="btn btn-small" hidden>Try again</button>
+    </section>
+
+    <section id="stats" class="stats" aria-label="Route result" aria-live="polite" hidden>
+      <div class="stat">
+        <p id="stat-pollen-title" class="stat-title" hidden></p>
+        <div id="stat-pollen-head" class="stat-head">
+          <span id="stat-pollen-value" class="stat-value"></span>
+          <span id="stat-pollen-label" class="stat-label"></span>
+        </div>
+        <div id="stat-pollen-track" class="stat-track"><span id="stat-pollen-bar" class="stat-bar stat-bar-pollen"></span></div>
+        <p id="stat-pollen-note" class="stat-note"></p>
+      </div>
+      <div id="stat-air" class="stat" hidden>
+        <p id="stat-air-title" class="stat-title" hidden>No cleaner air option on this walk</p>
+        <div id="stat-air-head" class="stat-head">
+          <span id="stat-air-value" class="stat-value"></span>
+          <span class="stat-label">Less estimated traffic pollution</span>
+        </div>
+        <div id="stat-air-track" class="stat-track"><span id="stat-air-bar" class="stat-bar stat-bar-air"></span></div>
+        <p id="stat-air-note" class="stat-note"></p>
+      </div>
+      <p id="stat-time" class="stat-time"></p>
+      <p id="stat-context" class="stat-note"></p>
+      <p id="stat-foot" class="stat-foot"></p>
+    </section>
+
+    <footer class="footer">
+      <p>Estimated exposure from street tree records. Not live pollen. Not medical advice.</p>
+      <div id="badges" class="badges"></div>
+    </footer>
+  </div>
+
+  <div id="onboarding" class="onboarding" hidden>
+    <div class="onboarding-inner">
+      <p class="onboarding-brand">Clean Route</p>
+
+      <form id="ob-ask" class="ob-step">
+        <div class="field">
+          <label for="ob-name" class="field-label">Your name</label>
+          <input id="ob-name" type="text" autocomplete="given-name" placeholder="Sam">
+        </div>
+        <label for="ob-text" class="ob-title">Tell us what you're allergic to, and whether you have asthma</label>
+        <textarea id="ob-text" rows="3" placeholder="I'm allergic to olive and birch, and I have mild asthma"></textarea>
+        <div class="ob-actions">
+          <button id="ob-mic" type="button" class="btn btn-mic btn-large">
+            <svg class="mic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 0 0-7 0v6A3.5 3.5 0 0 0 12 15Z"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3.5" fill="none"/></svg>
+            <span id="ob-mic-label">Speak</span>
+          </button>
+          <button id="ob-submit" type="submit" class="btn btn-primary btn-large">Continue</button>
+        </div>
+        <p id="ob-mic-note" class="status" hidden></p>
+        <p id="ob-status" class="status status-slot" role="status"></p>
+        <div id="ob-error" class="notice notice-error" role="alert" hidden>
+          <p id="ob-error-text"></p>
+          <button id="ob-manual" type="button" class="btn btn-small">Continue without a profile</button>
+        </div>
+      </form>
+
+      <section id="ob-confirm" class="ob-step" hidden>
+        <h2 id="ob-confirm-title" class="ob-title"></h2>
+        <p id="ob-heard" class="transcript" hidden></p>
+
+        <div class="field">
+          <span class="field-label" id="ob-chips-label">Trees to avoid</span>
+          <div id="ob-chips" class="chips" role="group" aria-labelledby="ob-chips-label"></div>
+          <p id="ob-empty-note" class="small" hidden>No trees selected. Routes will count every tree.</p>
+        </div>
+
+        <details class="ob-unsure">
+          <summary>Not sure which trees affect you?</summary>
+          <form id="symptom-form">
+            <label for="symptom-input" class="field-label">Describe what happens and when</label>
+            <div class="symptom-row">
+              <input id="symptom-input" type="text" placeholder="My eyes itch every March" autocomplete="off">
+              <button id="symptom-submit" type="submit" class="btn">Search</button>
+            </div>
+          </form>
+          <p id="symptom-status" class="status" role="status" hidden></p>
+          <ul id="symptom-results" class="suggestions"></ul>
+          <p id="symptom-note" class="symptom-note" hidden></p>
+        </details>
+
+        <label class="switch"><span>I have asthma</span><input id="ob-asthma" type="checkbox" role="switch"></label>
+
+        <div id="ob-reasons-block" class="ob-list-block" hidden>
+          <h3>Why we added these</h3>
+          <ul id="ob-reasons" class="ob-list"></ul>
+        </div>
+
+        <div id="ob-not-covered-block" class="ob-list-block" hidden>
+          <h3>What routes can't help with</h3>
+          <ul id="ob-not-covered" class="ob-list"></ul>
+        </div>
+
+        <p id="ob-save-status" class="status status-slot" role="status"></p>
+        <p id="ob-storage-note" class="small" hidden>This browser won't remember your profile after you close it.</p>
+
+        <div class="ob-actions">
+          <button id="ob-done" type="button" class="btn btn-primary btn-large">Looks right, show the map</button>
+          <button id="ob-restart" type="button" class="link">Start over as someone new</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.js"></script>
+  <script src="app.js?v=20"></script>
+</body>
+</html>
