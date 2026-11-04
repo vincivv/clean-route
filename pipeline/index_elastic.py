@@ -10,13 +10,29 @@ sys.path.insert(0, __file__.rsplit("/", 2)[0])
 from pipeline.config import ALLERGENS_INDEX, ALLERGENS_JSON, APEZ_JSON, INFERENCE_ID, TREES_INDEX, TREES_JSON, ZONE_INDEX, es_client
 
 
+REFERENCE_LEVELS = {"severe": 3, "moderate": 2, "mild": 1, "no allergy reported": 1}
+
+
 def load_table():
-    """Mistral's table plus reviewed corrections."""
+    """Mistral's table, then reviewed corrections, then published ratings, which win where one exists.
+
+    "No allergy reported" maps to 1, not 0: a lack of reports isn't evidence that a tree is safe.
+    """
     table = json.loads(ALLERGENS_JSON.read_text())["species"]
     overrides = json.loads((ALLERGENS_JSON.parent / "allergen_overrides.json").read_text())
     for sci, fix in overrides.items():
         if sci in table:
             table[sci].update(fix)
+    path = ALLERGENS_JSON.parent / "allergen_crosscheck.json"
+    checks = json.loads(path.read_text()) if path.exists() else {}
+    for sci, a in table.items():
+        a["mistral_level"] = a["allergy_level"]
+        ref = checks.get(sci, {})
+        level = REFERENCE_LEVELS.get(ref.get("word"))
+        a["verified"] = level is not None and ref.get("match") == "species"
+        a["reference"] = {k: ref.get(k) for k in ("word", "match", "url", "season")} if level is not None else None
+        if level is not None and a["allergy_level"] > 0:
+            a["allergy_level"] = level
     return table
 
 
@@ -84,6 +100,7 @@ def allergens(es, table):
         "profile": {"type": "semantic_text", "inference_id": INFERENCE_ID},
         "rationale": {"type": "text"},
         "trees": {"type": "integer"},
+        "verified": {"type": "boolean"},
     }})
     month = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
@@ -94,7 +111,7 @@ def allergens(es, table):
             months = ", ".join(month[m] for m in a["bloom_months"])
             yield {"_index": ALLERGENS_INDEX, "_id": sci, "_source": {
                 "scientific": sci, "common": a["common_name"], "allergen_group": a["allergen_group"], "level": a["allergy_level"],
-                "bloom_months": a["bloom_months"], "symptoms_text": a["symptoms"], "rationale": a["rationale"], "trees": a["trees"],
+                "bloom_months": a["bloom_months"], "symptoms_text": a["symptoms"], "rationale": a["rationale"], "trees": a["trees"], "verified": a["verified"],
                 "profile": f"{a['common_name']} ({sci}). Pollen season: {months}. {a['symptoms']} {a['rationale']}"}}
 
     ok, errors = helpers.bulk(es, docs(), chunk_size=25, max_retries=4, raise_on_error=False, request_timeout=300)

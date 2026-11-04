@@ -54,3 +54,13 @@ def test_allergic_to_is_not_a_destination():
     assert trip_places("I'm allergic to London plane trees", None, None) == (None, None)
     assert trip_places("walk me from the Ferry Building to Dolores Park, I have asthma", None, None) == ("the Ferry Building", "Dolores Park")
     assert trip_places("take me to Dolores Park", None, None) == (None, "Dolores Park")
+
+
+def test_published_rating_wins_and_no_reports_is_not_zero():
+    from pipeline.index_elastic import load_table
+
+    table = load_table()
+    plane = table["Platanus x hispanica"]
+    assert plane["mistral_level"] == 3 and plane["allergy_level"] == 2 and plane["verified"]
+    assert table["Pinus radiata"]["allergy_level"] == 1
+    assert not table["Maytenus boaria"]["verified"]

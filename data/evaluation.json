@@ -1,11 +1,11 @@
 {
  "walks": 30,
  "month": 4,
- "median_reduction_pct": 75.7,
- "p25": 60.1,
- "p75": 80.3,
- "median_reduction_within_100m_pct": 34.0,
- "median_extra_min": 1.8,
- "median_walk_min": 31.6,
+ "median_reduction_pct": 74.4,
+ "p25": 53.9,
+ "p75": 84.4,
+ "median_reduction_within_100m_pct": 19.7,
+ "median_extra_min": 2.5,
+ "median_walk_min": 30.8,
  "share_changed": 1.0
 }

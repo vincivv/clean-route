@@ -1,0 +1,726 @@
+{
+ "Platanus x hispanica": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Platanus+acerifolia/",
+  "word": "moderate",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Lophostemon confertus": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Lophostemon+confertus/",
+  "match": null
+ },
+ "Ficus microcarpa nitida 'Green Gem'": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Ficus+microcarpa/",
+  "match": null
+ },
+ "Pittosporum undulatum": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Pittosporum+undulatum/",
+  "match": null
+ },
+ "Magnolia grandiflora": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Magnolia+grandiflora/",
+  "word": "mild",
+  "season": "Spring to Fall",
+  "match": "species"
+ },
+ "Tristaniopsis laurina": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Tristaniopsis+laurina/",
+  "match": null
+ },
+ "Prunus cerasifera": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Prunus+cerasifera/",
+  "match": null
+ },
+ "Metrosideros excelsa": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Metrosideros+excelsa/",
+  "match": null
+ },
+ "Ginkgo biloba": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Ginkgo+biloba/",
+  "word": "mild",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Pyrus calleryana": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Pyrus+calleryana/",
+  "word": "mild",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Ulmus parvifolia": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Ulmus+parvifolia/",
+  "word": "moderate",
+  "season": "Fall",
+  "match": "species"
+ },
+ "Olea europaea": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Olea+europaea/",
+  "word": "severe",
+  "season": "Summer",
+  "match": "species"
+ },
+ "Maytenus boaria": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Maytenus+boaria/",
+  "match": null
+ },
+ "Prunus serrulata 'Kwanzan'": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Prunus+serrulata/",
+  "match": null
+ },
+ "Arbutus 'Marina'": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Arbutus/",
+  "match": null
+ },
+ "Corymbia ficifolia": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Corymbia+ficifolia/",
+  "match": null
+ },
+ "Ficus retusa nitida": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Ficus+retusa/",
+  "match": null
+ },
+ "Callistemon citrinus": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Callistemon+citrinus/",
+  "word": "mild",
+  "season": "Summer",
+  "match": "species"
+ },
+ "Acacia melanoxylon": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Acacia+baileyana/",
+  "word": "mild",
+  "season": "Spring",
+  "match": "relative"
+ },
+ "Ligustrum lucidum": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Ligustrum+lucidum/",
+  "word": "severe",
+  "season": "Summer to Fall",
+  "match": "species"
+ },
+ "Jacaranda mimosifolia": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Jacaranda+mimosifolia/",
+  "match": null
+ },
+ "Liquidambar styraciflua": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Liquidambar+styraciflua/",
+  "word": "mild",
+  "season": "Winter to Summer",
+  "match": "species"
+ },
+ "Eriobotrya deflexa": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Eriobotrya+deflexa/",
+  "match": null
+ },
+ "Acer rubrum": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Acer+rubrum/",
+  "word": "moderate",
+  "season": "Winter to Spring",
+  "match": "species"
+ },
+ "Pyrus kawakamii": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Pyrus+kawakamii/",
+  "match": null
+ },
+ "Washingtonia robusta": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Washingtonia+robusta/",
+  "word": "mild",
+  "season": "Spring to Summer",
+  "match": "species"
+ },
+ "Planting site (plant)": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Planting+site/",
+  "match": null
+ },
+ "Syagrus romanzoffianum": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Syagrus+romanzoffiana/",
+  "match": null
+ },
+ "Prunus serrulata": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Prunus+serrulata/",
+  "match": null
+ },
+ "Tristaniopsis laurina 'Elegant'": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Tristaniopsis+laurina/",
+  "match": null
+ },
+ "Phoenix canariensis": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Phoenix+canariensis/",
+  "word": "mild",
+  "season": "Spring to Summer",
+  "match": "species"
+ },
+ "Melaleuca quinquenervia": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Melaleuca+quinquenervia/",
+  "word": "moderate",
+  "season": "all year long",
+  "match": "species"
+ },
+ "Juniperus chinensis": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Juniperus+virginiana/",
+  "word": "severe",
+  "season": "Spring",
+  "match": "relative"
+ },
+ "Laurus nobilis": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Laurus+nobilis/",
+  "match": null
+ },
+ "Magnolia grandiflora 'Little Gem'": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Magnolia+grandiflora/",
+  "word": "mild",
+  "season": "Spring to Fall",
+  "match": "species"
+ },
+ "Schinus terebinthifolius": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Schinus+terebinthifolius/",
+  "word": "mild",
+  "season": "Spring to Summer",
+  "match": "species"
+ },
+ "Fraxinus uhdei": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Fraxinus+uhdei/",
+  "word": "severe",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Cordyline australis": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Cordyline+australis/",
+  "match": null
+ },
+ "Ficus microcarpa": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Ficus+microcarpa/",
+  "match": null
+ },
+ "Afrocarpus gracilior": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Afrocarpus+gracilior/",
+  "match": null
+ },
+ "Pistacia chinensis": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Pistacia+chinensis/",
+  "word": "no allergy reported",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Callistemon viminalis": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Callistemon+viminalis/",
+  "match": null
+ },
+ "Acer buergeranum": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Acer+buergeranum/",
+  "match": null
+ },
+ "Pittosporum crassifolium": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Pittosporum+crassifolium/",
+  "match": null
+ },
+ "Fraxinus spp": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Fraxinus+americana/",
+  "word": "severe",
+  "season": "Winter to Spring",
+  "match": "relative"
+ },
+ "Lagunaria patersonii": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Lagunaria+patersonii/",
+  "match": null
+ },
+ "Stump (use Grinder)": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Stump+(use/",
+  "match": null
+ },
+ "Geijera parviflora": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Geijera+parviflora/",
+  "match": null
+ },
+ "Pyrus calleryana 'Aristocrat'": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Pyrus+calleryana/",
+  "word": "mild",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Myoporum laetum": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Myoporum+laetum/",
+  "match": null
+ },
+ "Ceratonia siliqua": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Ceratonia+siliqua/",
+  "word": "mild",
+  "season": "Spring and Fall",
+  "match": "species"
+ },
+ "Acacia baileyana": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Acacia+baileyana/",
+  "word": "mild",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Koelreuteria paniculata": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Koelreuteria+paniculata/",
+  "word": "no allergy reported",
+  "season": "Summer",
+  "match": "species"
+ },
+ "Lyonothamnus floribundus subsp. asplenifolius": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Lyonothamnus+floribundus/",
+  "match": null
+ },
+ "Eucalyptus polyanthemos": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Eucalyptus+globulus/",
+  "word": "mild",
+  "season": "Spring to Summer",
+  "match": "relative"
+ },
+ "Crataegus phaenopyrum": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Crataegus+phaenopyrum/",
+  "word": "mild",
+  "season": "Spring to Summer",
+  "match": "species"
+ },
+ "Acer palmatum": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Acer+palmatum/",
+  "word": "moderate",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Eucalyptus citriodora": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Eucalyptus+globulus/",
+  "word": "mild",
+  "season": "Spring to Summer",
+  "match": "relative"
+ },
+ "Acacia stenophylla": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Acacia+baileyana/",
+  "word": "mild",
+  "season": "Spring",
+  "match": "relative"
+ },
+ "Robinia x ambigua 'Purple Robe'": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Robinia+x+ambigua/",
+  "match": null
+ },
+ "Eucalyptus sideroxylon": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Eucalyptus+globulus/",
+  "word": "mild",
+  "season": "Spring to Summer",
+  "match": "relative"
+ },
+ "Populus nigra 'Italica'": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Populus+nigra/",
+  "word": "moderate",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Schinus molle": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Schinus+molle/",
+  "word": "mild",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Cupressus macrocarpa": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Cupressus+macrocarpa/",
+  "word": "severe",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Liriodendron tulipifera": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Liriodendron+tulipifera/",
+  "word": "mild",
+  "season": "Spring to Summer",
+  "match": "species"
+ },
+ "Agonis flexuosa": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Agonis+flexuosa/",
+  "match": null
+ },
+ "Magnolia grandiflora 'Saint Mary'": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Magnolia+grandiflora/",
+  "word": "mild",
+  "season": "Spring to Fall",
+  "match": "species"
+ },
+ "Yucca gloriosa": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Yucca+gloriosa/",
+  "match": null
+ },
+ "Trachycarpus fortunei": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Trachycarpus+fortunei/",
+  "match": null
+ },
+ "Ceanothus 'Ray Hartman'": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Ceanothus/",
+  "match": null
+ },
+ "Platanus x hispanica 'Columbia'": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Platanus+acerifolia/",
+  "word": "moderate",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Chamaerops humilis": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Chamaerops+humilis/",
+  "match": null
+ },
+ "Quercus agrifolia": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Quercus+agrifolia/",
+  "word": "severe",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Prunus x yedoensis": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Prunus+x+yedoensis/",
+  "match": null
+ },
+ "Magnolia grandiflora 'Samuel Sommer'": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Magnolia+grandiflora/",
+  "word": "mild",
+  "season": "Spring to Fall",
+  "match": "species"
+ },
+ "Pinus radiata": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Pinus+radiata/",
+  "word": "no allergy reported",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Laurus x 'Saratoga'": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Laurus+x/",
+  "match": null
+ },
+ "Planting site": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Planting+site/",
+  "match": null
+ },
+ "Planting site (cut)": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Planting+site/",
+  "match": null
+ },
+ "Celtis sinensis": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Celtis+sinensis/",
+  "match": null
+ },
+ "Rhaphiolepis \"Majestic Beauty\"": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Rhaphiolepis+\"Majestic/",
+  "match": null
+ },
+ "Ficus nitida": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Ficus+nitida/",
+  "match": null
+ },
+ "Podocarpus gracilor": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Podocarpus+gracilor/",
+  "match": null
+ },
+ "Rhamnus alaternus": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Rhamnus+alaternus/",
+  "match": null
+ },
+ "Arbutus unedo": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Arbutus+unedo/",
+  "match": null
+ },
+ "patanus racemosa": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Platanus+racemosa/",
+  "word": "moderate",
+  "season": "Winter to Spring",
+  "match": "species"
+ },
+ "Paved Over": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Paved+Over/",
+  "match": null
+ },
+ "Planting site (pave)": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Planting+site/",
+  "match": null
+ },
+ "Stump": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Stump/",
+  "match": null
+ },
+ "Pyrus calleryana 'Chanticleer'": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Pyrus+calleryana/",
+  "word": "mild",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Melaleuca linariifolia": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Melaleuca+linariifolia/",
+  "match": null
+ },
+ "Brahea edulis": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Brahea+edulis/",
+  "match": null
+ },
+ "Ceiba speciosa": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Ceiba+speciosa/",
+  "match": null
+ },
+ "Hymenosporum flavum": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Hymenosporum+flavum/",
+  "match": null
+ },
+ "Ligustrum japonicum": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Ligustrum+japonicum/",
+  "word": "severe",
+  "season": "Summer to Fall",
+  "match": "species"
+ },
+ "Tilia cordata": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Tilia+cordata/",
+  "word": "moderate",
+  "season": "Summer",
+  "match": "species"
+ },
+ "Pittosporum tenuifolium": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Pittosporum+tenuifolium/",
+  "match": null
+ },
+ "Photinia fraseri": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Photinia+fraseri/",
+  "match": null
+ },
+ "Taxus baccata": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Taxus+baccata/",
+  "word": "no allergy reported",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Prunus domestica 'Mariposa'": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Prunus+domestica/",
+  "word": "mild",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Magnolia grandiflora 'Russet'": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Magnolia+grandiflora/",
+  "word": "mild",
+  "season": "Spring to Fall",
+  "match": "species"
+ },
+ "Sequoia sempervirens": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Sequoia+sempervirens/",
+  "word": "no allergy reported",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Potential Site": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Potential+Site/",
+  "match": null
+ },
+ "Dodonaea viscosa 'Purpurea'": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Dodonaea+viscosa/",
+  "match": null
+ },
+ "Chitalpa tashkentensis": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Chitalpa+tashkentensis/",
+  "match": null
+ },
+ "Leptospermum laevigatum": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Leptospermum+laevigatum/",
+  "match": null
+ },
+ "Cupaniopsis anacardioides": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Cupaniopsis+anacardioides/",
+  "match": null
+ },
+ "Malus floribunda": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Malus+floribunda/",
+  "word": "mild",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Cinnamomum camphora": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Cinnamomum+camphora/",
+  "word": "mild",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Pinus canariensis": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Pinus+ponderosa/",
+  "word": "no allergy reported",
+  "season": "Spring",
+  "match": "relative"
+ },
+ "Magnolia doltsopa": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Magnolia+doltsopa/",
+  "match": null
+ },
+ "Carpinus betulus": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Carpinus+betulus/",
+  "word": "moderate",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Aesculus x carnea": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Aesculus+x+carnea/",
+  "match": null
+ },
+ "Quercus suber": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Quercus+suber/",
+  "match": null
+ },
+ "Fraxinus oxycarpa": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Fraxinus+americana/",
+  "word": "severe",
+  "season": "Winter to Spring",
+  "match": "relative"
+ },
+ "Quercus virginiana": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Quercus+virginiana/",
+  "word": "severe",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Cupressus sempervirens": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Cupressus+sempervirens/",
+  "word": "no allergy reported",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Liquidambar styraciflua 'Rotundiloba'": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Liquidambar+styraciflua/",
+  "word": "mild",
+  "season": "Winter to Summer",
+  "match": "species"
+ },
+ "Betula pendula": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Betula+pendula/",
+  "word": "moderate",
+  "season": "Spring",
+  "match": "species"
+ },
+ "Podocarpus macrophyllus": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Podocarpus+macrophyllus/",
+  "match": null
+ },
+ "Syzygium paniculatum": {
+  "status": "not found",
+  "url": "https://www.pollenlibrary.com/Specie/Syzygium+paniculatum/",
+  "match": null
+ },
+ "Pinus pinea": {
+  "status": "ok",
+  "url": "https://www.pollenlibrary.com/Specie/Pinus+ponderosa/",
+  "word": "no allergy reported",
+  "season": "Spring",
+  "match": "relative"
+ }
+}
