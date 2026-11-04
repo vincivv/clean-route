@@ -8,6 +8,8 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import dijkstra
 from scipy.spatial import cKDTree
+from shapely import STRtree
+from shapely.geometry import LineString, Point
 
 from pipeline.config import CENTER, GRAPH_JSON, SEGMENTS_JSON
 from pipeline.score_segments import MAJOR, MEDIUM
@@ -21,14 +23,19 @@ EDGE_PENALTY_M = 8.0  # Every extra piece of path costs a little, which stops ro
 CONGESTION_WEIGHT = 2.0
 COVERAGE_M = 300
 HEAVY_CONGESTION = 0.4
+AIR_PRICE = 1.0
+AIR_SLACK = 0.05  # May add heavy-traffic or major-road walking equal to 5% of the direct route, if that avoids far more pollen.
+
+
+ROAD_INTENSITY = {"motorway_link": 1.0, "trunk": 1.0, "trunk_link": 1.0, "primary": 1.0, "primary_link": 1.0, "secondary": 0.7, "secondary_link": 0.7,
+                  "tertiary": 0.4, "tertiary_link": 0.4, "residential": 0.15, "unclassified": 0.15, "living_street": 0.1, "busway": 0.2, "service": 0.05}
+MAJOR_INTENSITY = 0.7
+ZONE_FACTOR = 1.25
+SIDEWALK_MATCH_M = 20
 
 
 def road_penalty(highway: str) -> float:
-    if highway in MAJOR:
-        return 0.6
-    if highway in MEDIUM:
-        return 0.25
-    return 0.0
+    return ROAD_INTENSITY.get(highway, 0.0)
 
 
 @dataclass
@@ -42,6 +49,7 @@ class Network:
     tree: cKDTree | None = None
     ix: dict = field(default_factory=dict)
     congestion: dict = field(default_factory=dict)  # Live, 0 to 1, by edge id. Empty when there's no traffic feed.
+    beside: dict = field(default_factory=dict)  # Road class next to each sidewalk, since OSM tags sidewalks only as footway.
 
     @classmethod
     def load(cls):
@@ -60,7 +68,33 @@ class Network:
         net.graph = net.graph.subgraph(keep).copy()
         net.node_ids = list(keep)
         net.tree = cKDTree([(net.nodes[n][0], net.nodes[n][1] * MLON) for n in net.node_ids])
+        net.beside = net._match_sidewalks()
         return net
+
+    def _match_sidewalks(self):
+        """Give every walking edge the busiest road within SIDEWALK_MATCH_M metres of its midpoint."""
+        xy = lambda p: ((p[1] - CENTER[1]) * 111_320 * MLON, (p[0] - CENTER[0]) * 111_320)
+        roads = [e for e in self.edges.values() if ROAD_INTENSITY.get(e["highway"], 0) > 0]
+        lines = [LineString([xy(p) for p in r["coords"]]) for r in roads]
+        tree = STRtree(lines)
+        ids = list(self.edges)
+        points = [Point(xy(self.edges[i]["coords"][len(self.edges[i]["coords"]) // 2])) for i in ids]
+        pi, ri = tree.query(points, predicate="dwithin", distance=SIDEWALK_MATCH_M)
+        out = {}
+        for p, r in zip(pi, ri):
+            hw = roads[r]["highway"]
+            if ROAD_INTENSITY[hw] > ROAD_INTENSITY.get(out.get(ids[p], ""), 0):
+                out[ids[p]] = hw
+        return out
+
+    def road_intensity(self, edge_id):
+        return max(ROAD_INTENSITY.get(self.edges[edge_id]["highway"], 0.0), ROAD_INTENSITY.get(self.beside.get(edge_id, ""), 0.0))
+
+    def air_intensity(self, edge_id):
+        """Estimated traffic pollution per metre: road class, raised by live congestion and SF's exposure zone."""
+        c = self.congestion.get(edge_id, 0.0)
+        base = max(self.road_intensity(edge_id), 0.15 if c > 0 else 0.0)
+        return base * (1 + CONGESTION_WEIGHT * c) * (ZONE_FACTOR if edge_id in self.zone else 1.0)
 
     def nearest(self, latlon) -> str:
         _, i = self.tree.query((latlon[0], latlon[1] * MLON))
@@ -95,7 +129,8 @@ class Network:
             "length_m": round(length, 1),
             "minutes": round(length / WALK_M_PER_MIN, 1),
             "segment_exposure": round(sum(self.exposure(i, weights) for i in ids), 1),
-            "major_road_share": round(sum(self.edges[i]["length"] for i in ids if road_penalty(self.edges[i]["highway"]) >= 0.6) / length, 3),
+            "major_road_share": round(sum(self.edges[i]["length"] for i in ids if self.road_intensity(i) >= MAJOR_INTENSITY) / length, 3),
+            "air_exposure": round(sum(self.edges[i]["length"] * self.air_intensity(i) for i in ids), 1),
             "pollution_zone_share": round(sum(self.edges[i]["length"] for i in ids if i in self.zone) / length, 3),
             "congested_share": round(sum(self.edges[i]["length"] for i in ids if self.congestion.get(i, 0) >= HEAVY_CONGESTION) / length, 3),
         }
@@ -107,8 +142,7 @@ class Network:
             triples = [(pos[u], pos[v], d["id"]) for u, v, d in self.graph.edges(data=True)]
             self.ix.update(names=names, pos=pos, us=np.array([t[0] for t in triples]), vs=np.array([t[1] for t in triples]),
                            ids=[t[2] for t in triples], lengths=np.array([self.edges[t[2]]["length"] for t in triples]),
-                           road=np.array([road_penalty(self.edges[t[2]]["highway"]) for t in triples]),
-                           zone=np.array([0.3 if t[2] in self.zone else 0.0 for t in triples]))
+                           )
         return self.ix
 
     def _solve(self, a, b, costs):
@@ -135,24 +169,24 @@ class Network:
         base = self.stats(base_path, weights)
         budget = base["length_m"] * max_detour
         exposure = np.array([self.exposure(i, weights) for i in ix["ids"]])
-        live = np.array([self.congestion.get(i, 0.0) for i in ix["ids"]]) if self.congestion else 0.0
-        factor = 1.0 + (ix["road"] + ix["zone"] + CONGESTION_WEIGHT * live if asthma else 0.0)
+        factor = 1.0 + (AIR_PRICE * np.array([self.air_intensity(i) for i in ix["ids"]]) if asthma else 0.0)
 
-        base_air = self._air_cost(base)
+        base_air = base["air_exposure"]
 
         def badness(st):
             """Pollen and air as shares of the direct route, so neither swamps the other because of its units."""
             pollen = st["segment_exposure"] / base["segment_exposure"] if base["segment_exposure"] > 0 else 0.0
             if not asthma:
                 return pollen
-            return pollen + (self._air_cost(st) / base_air if base_air > 0 else 0.0)
+            return pollen + (st["air_exposure"] / base_air if base_air > 0 else 0.0)
 
         def traffic_ok(st):
-            """Someone with asthma never gets more metres in heavy traffic or on major roads than the direct route."""
+            """Someone with asthma can't be sent into much more heavy traffic or major-road walking than the direct route."""
             if not asthma:
                 return True
             metres = lambda r, key: r["length_m"] * r[key]
-            return metres(st, "congested_share") <= metres(base, "congested_share") + 1 and metres(st, "major_road_share") <= metres(base, "major_road_share") + 1
+            slack = AIR_SLACK * base["length_m"]
+            return metres(st, "congested_share") <= metres(base, "congested_share") + slack and metres(st, "major_road_share") <= metres(base, "major_road_share") + slack
 
         options = [(base["length_m"], badness(base), base_path)]
         for alpha in ALPHAS:
@@ -165,7 +199,3 @@ class Network:
         worst, best = options[0][1], min(o[1] for o in options)
         target = worst - KNEE_SHARE * (worst - best)
         return min((o for o in options if o[1] <= target), key=lambda o: o[0])[2]
-
-    @staticmethod
-    def _air_cost(s):
-        return s["length_m"] * (1 + s["major_road_share"] * 0.6 + s["pollution_zone_share"] * 0.3 + s.get("congested_share", 0.0) * CONGESTION_WEIGHT)

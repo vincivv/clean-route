@@ -126,10 +126,13 @@ class Traffic:
         if not has_elastic():
             return
         es = es_client()
-        if not es.indices.exists(index=TRAFFIC_INDEX):
-            es.indices.create(index=TRAFFIC_INDEX, mappings={"properties": {"line": {"type": "geo_shape"}, "congestion": {"type": "float"}, "updated": {"type": "date"}, "source": {"type": "keyword"}}})
+        mapping = es.options(ignore_status=404).indices.get_mapping(index=TRAFFIC_INDEX)
+        if "point" not in mapping.get(TRAFFIC_INDEX, {}).get("mappings", {}).get("properties", {}):
+            es.options(ignore_status=404).indices.delete(index=TRAFFIC_INDEX)
+            es.indices.create(index=TRAFFIC_INDEX, mappings={"properties": {"line": {"type": "geo_shape"}, "point": {"type": "geo_point"}, "congestion": {"type": "float"}, "updated": {"type": "date"}, "source": {"type": "keyword"}}})
         docs = ({"_index": TRAFFIC_INDEX, "_id": hashlib.md5(str(c).encode()).hexdigest(), "_source": {
-            "line": {"type": "LineString", "coordinates": [[p[1], p[0]] for p in c]}, "congestion": lv, "updated": stamp.isoformat(), "source": "TomTom"}} for c, lv in lines)
+            "line": {"type": "LineString", "coordinates": [[p[1], p[0]] for p in c]}, "point": {"lat": c[len(c) // 2][0], "lon": c[len(c) // 2][1]},
+            "congestion": lv, "updated": stamp.isoformat(), "source": "TomTom"}} for c, lv in lines)
         ok, errors = helpers.bulk(es, docs, chunk_size=2000, raise_on_error=False)
         print(f"traffic: stored {ok} lines in Elastic, {len(errors)} errors", str(errors[:1])[:300] if errors else "", flush=True)
 

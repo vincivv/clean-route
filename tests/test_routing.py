@@ -75,8 +75,24 @@ def test_coords_are_continuous_even_when_geometry_is_stored_backwards():
     assert coords[1] == net.nodes["b"]
 
 
-def test_asthma_route_never_adds_heavy_traffic():
+def test_asthma_route_rejects_much_more_heavy_traffic():
     net = small_net(100.0)
     net.congestion = {"ac": 0.9, "cd": 0.9}
     assert net.clean("a", "d", {"olive": 1.0}, True, 1.3) == ["a", "b", "d"]
     assert net.clean("a", "d", {"olive": 1.0}, False, 1.3) == ["a", "c", "d"]
+
+
+def test_sidewalk_beside_a_major_road_counts_as_major():
+    net = small_net(0.0)
+    net.beside = {"ab": "primary", "bd": "primary"}
+    assert net.stats(["a", "b", "d"], {})["major_road_share"] == 1.0
+    assert net.stats(["a", "c", "d"], {})["major_road_share"] == 0.0
+    assert net.clean("a", "d", {}, True, 1.3) == ["a", "c", "d"]
+
+
+def test_live_congestion_raises_traffic_pollution_score():
+    net = small_net(0.0)
+    net.beside = {"ab": "secondary", "bd": "secondary"}
+    calm = net.stats(["a", "b", "d"], {})["air_exposure"]
+    net.congestion = {"ab": 0.8}
+    assert net.stats(["a", "b", "d"], {})["air_exposure"] > calm

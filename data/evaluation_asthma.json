@@ -1,0 +1,20 @@
+{
+ "walks": 100,
+ "measured_at": "2026-11-03T18:54",
+ "traffic_live": true,
+ "median_air_reduction_pct": 37.0,
+ "median_pollen_reduction_pct": 63.5,
+ "median_pollen_reduction_100m_pct": 19.4,
+ "median_extra_min": 2.3,
+ "median_heavy_traffic_m": [
+  494.8,
+  268.6
+ ],
+ "median_major_road_m": [
+  707.3,
+  245.7
+ ],
+ "walks_with_more_heavy_traffic": 8,
+ "walks_with_more_major_road": 5,
+ "median_route_seconds": 0.19
+}

@@ -7,7 +7,9 @@ import time
 from functools import lru_cache
 from pathlib import Path
 
+import numpy as np
 import requests
+from scipy.spatial import cKDTree
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -19,13 +21,14 @@ from zoneinfo import ZoneInfo
 from fastapi.middleware.gzip import GZipMiddleware
 
 from backend.routing import LOW_ALLERGEN, Network, WALK_M_PER_MIN
-from backend.traffic import Traffic
+from backend.traffic import TRAFFIC_INDEX, Traffic
 from pipeline.config import (ALLERGENS_INDEX, CENTER, RADIUS_M, ROOT, SEGMENTS_INDEX, SMALL_MODEL, BUFFER_M, TREES_INDEX, VENUE, VOICE_MODEL, LARGE_MODEL,
                              es_client, has_elastic, has_mistral, mistral_client)
 from pipeline.index_elastic import load_table
 from pipeline.score_segments import buffer_polygon
 
 PROFILES_INDEX = "cr_profiles"
+PLACES_INDEX = "cr_places"
 MONTH_RESIDUAL = 0.05
 MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 LABELS = {"plane": "Plane tree", "olive": "Olive", "cypress": "Cypress and juniper", "pine": "Pine", "oak": "Oak", "elm": "Elm", "ash": "Ash",
@@ -224,14 +227,17 @@ def sync_scores_from_elastic():
     print(f"synced {len(scores)} street scores from Elastic", flush=True)
 
 
-def explain(s, c, summary, names, month):
+def explain(s, c, summary, names, month, asthma=False):
     """Plain sentences built straight from Elastic's numbers, with no LLM arithmetic in the route path."""
     who = ", ".join(names) if isinstance(names, list) else names
     if c is s:
         return f"For {who} in {MONTHS[month]}, the shortest route is already the cleanest one we found."
     main = s["top_species"][0]["common"] if s["top_species"] else None
     text = f"In {MONTHS[month]}, this route passes {c['allergenic_trees_near']} trees that matter for {who}, compared with {s['allergenic_trees_near']} on the direct route, for {summary['extra_minutes']} more minutes."
-    return text + (f" The main source on the direct route is {main}." if main else "")
+    text += f" The main source on the direct route is {main}." if main else ""
+    if asthma:
+        text += f" It also has {summary['air_reduction_pct']}% less estimated traffic pollution and {round(c['major_road_share'] * 100)}% of the walk next to major roads, compared with {round(s['major_road_share'] * 100)}%."
+    return text
 
 
 @app.post("/api/route")
@@ -261,18 +267,18 @@ def route(req: RouteRequest):
     short |= m_short
     clean |= m_clean
     # Elastic's distinct-tree totals can disagree with the per-segment sum. Keep the shortest route if the "clean" one isn't really better.
-    air = lambda r: r["major_road_share"] + r["pollution_zone_share"] + r["congested_share"]
-    air_better = asthma and air(clean) < air(short)
+    air_better = asthma and clean["air_exposure"] < short["air_exposure"]
     if clean["exposure"] >= short["exposure"] and not air_better:
         clean = short
     same = clean is short
     reduction = round(100 * (1 - clean["exposure"] / short["exposure"]), 1) if short["exposure"] > 0 else 0.0
     summary = {"extra_minutes": round((clean["length_m"] - short["length_m"]) / WALK_M_PER_MIN, 1),
                "extra_meters": round(clean["length_m"] - short["length_m"]), "exposure_reduction_pct": reduction, "same_route": same,
+               "air_reduction_pct": round(100 * (1 - clean["air_exposure"] / short["air_exposure"]), 1) if short["air_exposure"] > 0 else 0.0,
                "in_season": [LABELS.get(g, g) for g in weights if month in BLOOM.get(g, {}).get("months", {})]}
     summary["reduction_within_100m_pct"] = round(100 * (1 - wide_clean / wide_short), 1) if wide_short > 0 else 0.0
     names = [LABELS.get(g, g) for g in groups] if groups else "all tree pollen"
-    return {"shortest": short, "clean": clean, "summary": summary, "explanation": explain(short, clean, summary, names, month), "elastic_query": q, "traffic_live": TRAFFIC.live and asthma,
+    return {"shortest": short, "clean": clean, "summary": summary, "explanation": explain(short, clean, summary, names, month, asthma), "elastic_query": q, "traffic_live": TRAFFIC.live and asthma,
             "applied": {"groups": groups, "asthma": asthma, "month": month}}
 
 
@@ -328,25 +334,124 @@ def understand(text):
     return u
 
 
+STREET_WORDS = re.compile(r"\s+(street|st|avenue|ave|boulevard|blvd|road|rd|drive|dr)\.?$", re.I)
+QUERY_FIXES = [(r"\bbldg\b", "building"), (r"\bbart\b", "station"), (r"\bmuni\b", "station"), (r"\bsf\b", "san francisco")]
+ALIASES = {"sfmoma": "San Francisco Museum of Modern Art", "moma": "San Francisco Museum of Modern Art", "the mission": "Mission Dolores Park", "mission district": "16th Street Mission"}
+
+
+def shorten_street(q):
+    """"mission st" should also match the street named "Mission Street"."""
+    for short, full in (("st", "street"), ("ave", "avenue"), ("blvd", "boulevard"), ("rd", "road"), ("dr", "drive")):
+        q = re.sub(rf"\b{short}\.?$", full, q, flags=re.I)
+    return q
+
+
+def street_key(name):
+    return STREET_WORDS.sub("", name.strip().lower())
+
+
+def street_index():
+    """Street name -> known points, from road edges and OSM addresses. Many SF roads have few named edges, so addresses fill the gaps."""
+    points = {}
+    for e in NET.edges.values():
+        if e.get("name"):
+            points.setdefault(street_key(e["name"]), []).extend(e["coords"])
+    path = ROOT / "data" / "raw" / "places.json"
+    if path.exists():
+        for el in json.loads(path.read_text())["elements"]:
+            street = el.get("tags", {}).get("addr:street")
+            lat, lon = el.get("lat") or el.get("center", {}).get("lat"), el.get("lon") or el.get("center", {}).get("lon")
+            if street and lat is not None:
+                points.setdefault(street_key(street), []).append([lat, lon])
+    return {k: np.array(v) * [1, 0.79] for k, v in points.items()}
+
+
+def intersection(text):
+    """The closest pair of known points on two streets, if they really come within 90 m of each other."""
+    m = re.match(r"^\s*(.+?)\s+(?:and|at|&|\+)\s+(.+?)\s*$", text, re.I)
+    if not m:
+        return None
+    a, b = STREETS.get(street_key(m.group(1))), STREETS.get(street_key(m.group(2)))
+    if a is None or b is None:
+        return None
+    dist, nearest = cKDTree(b).query(a)
+    i = int(dist.argmin())
+    if dist[i] * 111_320 > 90:
+        return None
+    mid = (a[i] + b[nearest[i]]) / 2 / [1, 0.79]
+    return {"name": f"{m.group(1).strip().title()} & {m.group(2).strip().title()}", "detail": "intersection", "point": [round(float(mid[0]), 6), round(float(mid[1]), 6)]}
+
+
+LEADING_WORDS = re.compile(r"^\s*(?:please\s+)?(?:(?:take|walk|get|bring)\s+me\s+to|(?:go|walk|head|route|directions?)\s+to|to)\s+", re.I)
+
+
+def search_places(text, near=None, size=6):
+    """Typo-tolerant autocomplete over OSM places in Elastic, favouring exact names, landmarks and nearby results."""
+    q = LEADING_WORDS.sub("", text).strip()
+    q = ALIASES.get(q.lower(), q)
+    q = re.sub(r"^the\s+", "", q, flags=re.I)
+    if len(q) < 2:
+        return []
+    corner = intersection(q)
+    if corner:
+        return [corner]
+    for pattern, fix in QUERY_FIXES:
+        q = re.sub(pattern, fix, q, flags=re.I)
+    origin = {"lat": near[0], "lon": near[1]} if near else {"lat": CENTER[0], "lon": CENTER[1]}
+    fields = ["name", "name._2gram", "name._3gram", "alt", "alt._2gram", "alt._3gram"]
+    query = {"function_score": {
+        "query": {"bool": {"should": [
+            {"term": {"name_exact": {"value": q.lower(), "boost": 60}}},
+            {"term": {"name_exact": {"value": shorten_street(q).lower(), "boost": 60}}},
+            {"match_phrase": {"name": {"query": q, "boost": 12}}},
+            {"multi_match": {"query": q, "type": "bool_prefix", "fields": fields, "operator": "and", "boost": 4}},
+            {"multi_match": {"query": q, "fields": ["name", "alt"], "fuzziness": "AUTO", "prefix_length": 1, "operator": "and", "boost": 2}},
+            {"match": {"category": {"query": q, "boost": 1}}},
+        ], "minimum_should_match": 1}},
+        "functions": [{"filter": {"term": {"landmark": True}}, "weight": 1.6}, {"gauss": {"location": {"origin": origin, "scale": "2km", "decay": 0.6}}}],
+        "score_mode": "multiply", "boost_mode": "multiply"}}
+    hits = es().search(index=PLACES_INDEX, query=query, size=size * 2, source=["name", "detail", "location"])["hits"]["hits"]
+    out, seen = [], set()
+    for h in hits:
+        d = h["_source"]
+        point = [d["location"]["lat"], d["location"]["lon"]]
+        if d["name"].lower() in seen or not NET.covers(point):
+            continue
+        seen.add(d["name"].lower())
+        out.append({"name": d["name"], "detail": d.get("detail"), "point": point})
+    return out[:size]
+
+
 @lru_cache(maxsize=256)
-def geocode(place):
+def nominatim(place):
+    """Fallback for addresses OSM's local data doesn't list. Raises on network errors so failures aren't cached."""
+    r = requests.get("https://nominatim.openstreetmap.org/search", timeout=6, headers={"User-Agent": "clean-route-hackathon-demo"},
+                     params={"q": f"{place}, San Francisco, CA", "format": "jsonv2", "limit": 1})
+    r.raise_for_status()
+    hits = r.json()
+    return [float(hits[0]["lat"]), float(hits[0]["lon"])] if hits else None
+
+
+def geocode(place, near=None):
     if not place:
         return None
-    key = place.lower().strip().removeprefix("the ")
+    key = re.sub(r"^the\s+", "", place.lower().strip())
     for name, ll in PLACES.items():
-        if name in key or key in name:
+        if key == name or (len(key) > 4 and (name in key or key in name)):
             return list(ll)
+    if has_elastic():
+        try:
+            hits = search_places(place, near, size=1)
+            if hits:
+                return hits[0]["point"]
+        except Exception as e:
+            print("place search failed:", type(e).__name__, str(e)[:150], flush=True)
     try:
-        r = requests.get("https://nominatim.openstreetmap.org/search", timeout=8, headers={"User-Agent": "clean-route-hackathon-demo"},
-                         params={"q": f"{place}, San Francisco, CA", "format": "jsonv2", "limit": 1})
-        hits = r.json()
-        if hits:
-            lat, lon = float(hits[0]["lat"]), float(hits[0]["lon"])
-            if abs(lat - CENTER[0]) < 0.03 and abs(lon - CENTER[1]) < 0.04:
-                return [lat, lon]
-    except Exception:
-        pass
-    return None
+        point = nominatim(place)
+        return point if point and NET.covers(point) else None
+    except Exception as e:
+        print("nominatim failed:", type(e).__name__, flush=True)
+        return None
 
 
 def transcribe(file_bytes, filename):
@@ -357,6 +462,12 @@ def transcribe(file_bytes, filename):
 
 class GeocodeRequest(BaseModel):
     text: str = Field(max_length=120)
+
+
+@app.get("/api/places")
+def places(q: str, lat: float | None = None, lon: float | None = None):
+    require_elastic()
+    return {"results": search_places(q[:120], [lat, lon] if lat is not None and lon is not None else None)}
 
 
 @app.post("/api/geocode")
@@ -494,6 +605,51 @@ def symptoms(req: SymptomRequest):
     return {"suggestions": out, "note": "A suggestion, not a diagnosis. An allergist can test for specific pollens.", "elastic_query": body}
 
 
+def tree_hotspots(zoom, month, groups):
+    """Elastic grid aggregation: where allergenic trees cluster, weighted by what's in season for this person."""
+    filters = [{"range": {"level": {"gte": 2}}}]
+    filters.append({"terms": {"allergen_group": groups}} if groups else {"bool": {"must_not": {"term": {"allergen_group": LOW_ALLERGEN}}}})
+    query = {"size": 0, "query": {"bool": {"filter": filters}}, "aggs": {"cells": {
+        "geotile_grid": {"field": "location", "precision": min(zoom + 4, 20), "size": 4000},
+        "aggs": {"center": {"geo_centroid": {"field": "location"}},
+                 "by_group": {"terms": {"field": "allergen_group", "size": 25}, "aggs": {"weight": {"sum": {"field": "weight"}}}}}}}}
+    weights = person_weights(groups, month)
+    buckets = es().search(index=TREES_INDEX, **query)["aggregations"]["cells"]["buckets"]
+    peak = sorted(sum(g["weight"]["value"] for g in b["by_group"]["buckets"]) for b in buckets)
+    # A fixed in-season scale, so November really looks dimmer than April.
+    scale = peak[int(len(peak) * 0.97)] if peak else 1.0
+    cells = []
+    for b in buckets:
+        now = sum(g["weight"]["value"] * weights.get(g["key"], 0.0) for g in b["by_group"]["buckets"])
+        c = b["center"]["location"]
+        cells.append({"point": [round(c["lat"], 5), round(c["lon"], 5)], "count": b["doc_count"], "level": round(min(now / scale, 1.0), 3)})
+    return cells, query
+
+
+def traffic_hotspots(zoom):
+    """Elastic grid aggregation over the latest congestion readings."""
+    query = {"size": 0, "query": {"bool": {"filter": [{"range": {"congestion": {"gte": 0.25}}}, {"range": {"updated": {"gte": "now-15m"}}}]}}, "aggs": {"cells": {
+        "geotile_grid": {"field": "point", "precision": min(zoom + 4, 20), "size": 4000},
+        "aggs": {"center": {"geo_centroid": {"field": "point"}}, "avg_congestion": {"avg": {"field": "congestion"}}}}}}
+    buckets = es().search(index=TRAFFIC_INDEX, **query)["aggregations"]["cells"]["buckets"]
+    return [{"point": [round(b["center"]["location"]["lat"], 5), round(b["center"]["location"]["lon"], 5)], "count": b["doc_count"], "level": round(b["avg_congestion"]["value"], 3)} for b in buckets], query
+
+
+@app.get("/api/hotspots")
+def hotspots(kind: str = "trees", zoom: int = 13, month: int | None = None, groups: str | None = None):
+    require_elastic()
+    zoom = max(10, min(zoom, 17))
+    if kind == "traffic":
+        if not es().indices.exists(index=TRAFFIC_INDEX):
+            return {"kind": kind, "cells": [], "query": None}
+        cells, query = traffic_hotspots(zoom)
+    elif kind == "trees":
+        cells, query = tree_hotspots(zoom, month or current_month(), [g for g in groups.split(",") if g] if groups else None)
+    else:
+        raise HTTPException(400, "kind must be trees or traffic")
+    return {"kind": kind, "cells": cells, "query": query}
+
+
 @app.get("/api/traffic")
 def traffic():
     return TRAFFIC.status()
@@ -533,6 +689,7 @@ def start_background_work():
     TRAFFIC.start()
 
 
+STREETS = street_index()
 frontend = Path(ROOT / "frontend")
 if (frontend / "index.html").exists():
     app.mount("/", StaticFiles(directory=frontend, html=True), name="frontend")
