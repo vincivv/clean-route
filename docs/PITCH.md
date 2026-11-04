@@ -2,13 +2,13 @@
 
 **Before you go up:** open the app and run the demo route once. Allow location if you want to route from where you are. Keep `docs/demo/backup_voice_clip.wav` ready in case the mic fails (it's a synthetic voice, so say so if you play it).
 
-**Best demo route right now:** 33 New Montgomery to Dolores Park, which starts at the venue. At 6:54 PM it showed 97% less pollen and 47% less traffic pollution for 4.3 more minutes. Traffic changes those numbers, so read them from the screen.
+**Best demo route right now:** 33 New Montgomery to Dolores Park, which starts at the venue. At 7:05 PM, planning for April with plane and olive, it showed 67% less pollen and 45% less traffic pollution for 2.5 more minutes (94% pollen without asthma, which ignores traffic). Live traffic changes those numbers, so read them from the screen.
 
-**November moment:** no trees are in season today, so the circles are dim. Choose "Plan for another month", pick April, and show them turn red. Say out loud that you're planning for April.
+**November moment:** no trees are in season today, so the circles are faded. Choose "Plan for another month", pick April, and show them brighten. Say out loud that you're planning for April.
 
 **0:00 Who (20 sec).** "One in five or so of us gets hit by pollen each spring. Your maps app can't help, because it doesn't know that the London planes on Market Street are what sets you off. SF has 138,000 mapped street trees, but no data on which ones trigger allergies." *(Check this first figure or drop it: it's from memory, not our data.)*
 
-**0:20 Demo (35 sec).** Speak: "I'm allergic to sycamore and olive, and I have asthma." Show the chips: Mistral mapped sycamore to plane trees. Search Dolores Park. "Today the circles are dim, because nothing's in season. Planning for April, they turn red. It routes me around them, and because I have asthma, around traffic too, using live TomTom congestion." *(Read the percentages and minutes from the screen.)*
+**0:20 Demo (35 sec).** Speak: "I'm allergic to sycamore and olive, and I have asthma." Show the chips: Mistral mapped sycamore to plane trees. Search Dolores Park. "Red blocks hold the most of my trees. They're faded today because nothing's in season. Planning for April, they brighten. It routes me around them, and because I have asthma, around traffic too, using live TomTom congestion." *(Read the percentages and minutes from the screen.)*
 
 **0:55 Honest number (15 sec).** "That's one of the best examples. Across 100 asthma walks, the median is 37% less estimated traffic pollution and 64% less pollen exposure counting trees within 25 metres, or 19% within 100, for about 2 extra minutes."
 
