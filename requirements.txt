@@ -1,0 +1,14 @@
+elasticsearch>=8.15
+mistralai
+fastapi
+uvicorn[standard]
+python-multipart
+python-dotenv
+requests
+osmnx
+networkx
+shapely
+scikit-learn
+pydantic>=2
+pytest
+httpx

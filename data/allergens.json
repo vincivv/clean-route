@@ -1,0 +1,1941 @@
+{
+ "model": "mistral-large-4",
+ "identified_trees": 60110,
+ "covered_trees": 55919,
+ "species": {
+  "Platanus x hispanica": {
+   "species_key": "Platanus x hispanica",
+   "common_name": "London plane tree",
+   "allergen_group": "plane",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Severe spring hay fever from March to May with sneezing, nasal congestion, and itchy eyes.",
+   "rationale": "Plane tree pollen is a highly potent wind-borne allergen and a leading cause of spring pollinosis in San Francisco.",
+   "confidence": "high",
+   "trees": 6194
+  },
+  "Lophostemon confertus": {
+   "species_key": "Lophostemon confertus",
+   "common_name": "Brush box",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    5,
+    6,
+    7
+   ],
+   "symptoms": "Occasional mild sneezing in late spring to summer if close to flowering trees, but pollen is rarely airborne.",
+   "rationale": "Bee-pollinated Myrtaceae with sticky pollen that is not readily wind-dispersed.",
+   "confidence": "medium",
+   "trees": 4347
+  },
+  "Ficus microcarpa nitida 'Green Gem'": {
+   "species_key": "Ficus microcarpa nitida 'Green Gem'",
+   "common_name": "Indian laurel fig 'Green Gem'",
+   "allergen_group": "low_allergen",
+   "allergy_level": 0,
+   "wind_pollinated": false,
+   "bloom_months": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "symptoms": "No pollen allergy expected as pollen remains enclosed within the fig syconium year-round.",
+   "rationale": "Pollinated by fig wasps inside the fruit; no airborne pollen is released.",
+   "confidence": "high",
+   "trees": 3619
+  },
+  "Pittosporum undulatum": {
+   "species_key": "Pittosporum undulatum",
+   "common_name": "Victorian box",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Minimal pollen symptoms in spring; sap can cause contact dermatitis but airborne pollen is negligible.",
+   "rationale": "Insect-pollinated with heavy pollen grains not carried by wind.",
+   "confidence": "high",
+   "trees": 3084
+  },
+  "Magnolia grandiflora": {
+   "species_key": "Magnolia grandiflora",
+   "common_name": "Southern magnolia",
+   "allergen_group": "low_allergen",
+   "allergy_level": 0,
+   "wind_pollinated": false,
+   "bloom_months": [
+    5,
+    6,
+    7,
+    8
+   ],
+   "symptoms": "No airborne pollen allergy; large beetle-pollinated pollen grains are not wind-borne.",
+   "rationale": "Beetle-pollinated with large sticky pollen that does not become airborne.",
+   "confidence": "high",
+   "trees": 3017
+  },
+  "Tristaniopsis laurina": {
+   "species_key": "Tristaniopsis laurina",
+   "common_name": "Swamp myrtle",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    6,
+    7,
+    8
+   ],
+   "symptoms": "Rare mild symptoms in summer because pollen is insect-borne and not wind-dispersed.",
+   "rationale": "Bee-pollinated Myrtaceae with pollen that is not wind-borne.",
+   "confidence": "medium",
+   "trees": 1840
+  },
+  "Prunus cerasifera": {
+   "species_key": "Prunus cerasifera",
+   "common_name": "Cherry plum",
+   "allergen_group": "other_wind",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    2,
+    3
+   ],
+   "symptoms": "Early spring rhinitis and itchy eyes from February to March; may cross-react with birch pollen.",
+   "rationale": "Abundant light pollen becomes airborne despite insect visitation and contains Bet v 1 homologs cross-reactive with birch.",
+   "confidence": "medium",
+   "trees": 1742
+  },
+  "Metrosideros excelsa": {
+   "species_key": "Metrosideros excelsa",
+   "common_name": "New Zealand Christmas tree",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    1,
+    2,
+    12
+   ],
+   "symptoms": "Rare winter pollen symptoms because the tree is bird-pollinated with heavy pollen.",
+   "rationale": "Primarily bird- and insect-pollinated with pollen not wind-borne.",
+   "confidence": "medium",
+   "trees": 1736
+  },
+  "Ginkgo biloba": {
+   "species_key": "Ginkgo biloba",
+   "common_name": "Ginkgo",
+   "allergen_group": "other_wind",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4
+   ],
+   "symptoms": "Spring allergic rhinitis in March and April from male catkins.",
+   "rationale": "Wind-pollinated gymnosperm releasing allergenic pollen from male trees (commonly planted to avoid fruit).",
+   "confidence": "high",
+   "trees": 1513
+  },
+  "Pyrus calleryana": {
+   "species_key": "Pyrus calleryana",
+   "common_name": "Callery pear",
+   "allergen_group": "other_wind",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4
+   ],
+   "symptoms": "Spring hay fever in March\u2013April; cross-reactive with birch and apple pollen.",
+   "rationale": "Rosaceae pollen with Bet v 1 homologs that becomes airborne and cross-reacts with birch.",
+   "confidence": "high",
+   "trees": 1257
+  },
+  "Ulmus parvifolia": {
+   "species_key": "Ulmus parvifolia",
+   "common_name": "Chinese elm",
+   "allergen_group": "elm",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    8,
+    9,
+    10
+   ],
+   "symptoms": "Late summer to fall allergies (August\u2013October) with sneezing and nasal congestion.",
+   "rationale": "Wind-pollinated Ulmaceae; elm pollen is highly allergenic and this species sheds pollen in fall in San Francisco.",
+   "confidence": "high",
+   "trees": 1245
+  },
+  "Olea europaea": {
+   "species_key": "Olea europaea",
+   "common_name": "Olive",
+   "allergen_group": "olive",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Severe spring allergic rhinitis and asthma from April to June.",
+   "rationale": "Wind-pollinated Oleaceae; olive pollen is a major potent allergen.",
+   "confidence": "high",
+   "trees": 1174
+  },
+  "Maytenus boaria": {
+   "species_key": "Maytenus boaria",
+   "common_name": "Chilean mayten",
+   "allergen_group": "other_wind",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Spring allergic rhinitis from March to May.",
+   "rationale": "Wind-pollinated Celastraceae with dry pollen that becomes airborne and is moderately allergenic.",
+   "confidence": "medium",
+   "trees": 1096
+  },
+  "Prunus serrulata 'Kwanzan'": {
+   "species_key": "Prunus serrulata 'Kwanzan'",
+   "common_name": "Kwanzan flowering cherry",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4
+   ],
+   "symptoms": "Minimal pollen allergy in spring due to sterile flowers.",
+   "rationale": "Sterile hybrid cultivar producing little viable pollen; not a significant allergen source.",
+   "confidence": "high",
+   "trees": 1016
+  },
+  "Arbutus 'Marina'": {
+   "species_key": "Arbutus 'Marina'",
+   "common_name": "Marina strawberry tree",
+   "allergen_group": "low_allergen",
+   "allergy_level": 0,
+   "wind_pollinated": false,
+   "bloom_months": [
+    1,
+    10,
+    11,
+    12
+   ],
+   "symptoms": "No airborne pollen allergy in fall\u2013winter because pollen is heavy and bee-pollinated.",
+   "rationale": "Insect-pollinated Ericaceae with heavy pollen not dispersed by wind.",
+   "confidence": "high",
+   "trees": 913
+  },
+  "Corymbia ficifolia": {
+   "species_key": "Corymbia ficifolia",
+   "common_name": "Red flowering gum",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    4,
+    5,
+    6,
+    7
+   ],
+   "symptoms": "Occasional mild symptoms in spring\u2013summer; bird- and insect-pollinated with little airborne pollen.",
+   "rationale": "Bird-pollinated Myrtaceae with pollen not readily wind-borne.",
+   "confidence": "medium",
+   "trees": 848
+  },
+  "Ficus retusa nitida": {
+   "species_key": "Ficus retusa nitida",
+   "common_name": "Chinese banyan",
+   "allergen_group": "low_allergen",
+   "allergy_level": 0,
+   "wind_pollinated": false,
+   "bloom_months": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "symptoms": "No pollen allergy; pollen enclosed in syconium year-round.",
+   "rationale": "Fig wasp pollination inside fruit; no airborne pollen.",
+   "confidence": "high",
+   "trees": 802
+  },
+  "Callistemon citrinus": {
+   "species_key": "Callistemon citrinus",
+   "common_name": "Crimson bottlebrush",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    4,
+    5,
+    6,
+    7
+   ],
+   "symptoms": "Minimal pollen symptoms in spring\u2013summer; bee-pollinated with sticky pollen.",
+   "rationale": "Insect-pollinated Myrtaceae; pollen is sticky and not wind-dispersed.",
+   "confidence": "medium",
+   "trees": 802
+  },
+  "Acacia melanoxylon": {
+   "species_key": "Acacia melanoxylon",
+   "common_name": "Blackwood acacia",
+   "allergen_group": "acacia",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    1,
+    2,
+    3
+   ],
+   "symptoms": "Winter\u2013spring allergic rhinitis from January to March.",
+   "rationale": "Dry pollen can be wind-dispersed; moderate allergen with potential cross-reactivity to other Fabaceae.",
+   "confidence": "medium",
+   "trees": 801
+  },
+  "Ligustrum lucidum": {
+   "species_key": "Ligustrum lucidum",
+   "common_name": "Glossy privet",
+   "allergen_group": "privet",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    5,
+    6,
+    7
+   ],
+   "symptoms": "Late spring to summer allergies (May\u2013July) with sneezing and itchy eyes.",
+   "rationale": "Abundant pollen becomes airborne despite insect visitation; known privet allergen cross-reactive with other Oleaceae like olive.",
+   "confidence": "high",
+   "trees": 772
+  },
+  "Jacaranda mimosifolia": {
+   "species_key": "Jacaranda mimosifolia",
+   "common_name": "Jacaranda",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    5,
+    6
+   ],
+   "symptoms": "Late spring (May\u2013June) mild rhinitis in highly sensitive individuals, but generally negligible.",
+   "rationale": "Insect-pollinated with heavy, sticky pollen that is not wind-dispersed, so airborne levels are minimal.",
+   "confidence": "high",
+   "trees": 662
+  },
+  "Liquidambar styraciflua": {
+   "species_key": "Liquidambar styraciflua",
+   "common_name": "Sweetgum",
+   "allergen_group": "sweetgum",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4
+   ],
+   "symptoms": "Severe spring allergic rhinitis and conjunctivitis from March to April with sneezing, nasal congestion, and itchy eyes.",
+   "rationale": "Wind-pollinated sweetgum releases massive amounts of pollen in early spring; cross-reactive with birch and hazel.",
+   "confidence": "high",
+   "trees": 636
+  },
+  "Eriobotrya deflexa": {
+   "species_key": "Eriobotrya deflexa",
+   "common_name": "Bronze Loquat",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    1,
+    10,
+    11,
+    12
+   ],
+   "symptoms": "Negligible pollen symptoms during its winter bloom (October\u2013January).",
+   "rationale": "Insect-pollinated loquat produces sticky pollen that does not become airborne in significant quantities.",
+   "confidence": "high",
+   "trees": 606
+  },
+  "Acer rubrum": {
+   "species_key": "Acer rubrum",
+   "common_name": "Red Maple",
+   "allergen_group": "maple",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    1,
+    2,
+    3
+   ],
+   "symptoms": "Early spring hay fever (January\u2013March) with sneezing, watery eyes, and asthma exacerbation.",
+   "rationale": "Wind-pollinated red maple sheds abundant pollen; cross-reactive with other Acer species and birch.",
+   "confidence": "high",
+   "trees": 531
+  },
+  "Pyrus kawakamii": {
+   "species_key": "Pyrus kawakamii",
+   "common_name": "Evergreen Pear",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4
+   ],
+   "symptoms": "Minimal spring symptoms; pollen is not a major airborne allergen.",
+   "rationale": "Insect-pollinated ornamental pear has heavy pollen that is not wind-dispersed.",
+   "confidence": "high",
+   "trees": 523
+  },
+  "Washingtonia robusta": {
+   "species_key": "Washingtonia robusta",
+   "common_name": "Mexican Fan Palm",
+   "allergen_group": "palm",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Spring rhinitis and conjunctivitis from April to June.",
+   "rationale": "Wind-pollinated palm produces copious pollen; cross-reactive with other Arecaceae palms such as Phoenix.",
+   "confidence": "medium",
+   "trees": 414
+  },
+  "Planting site (plant)": {
+   "species_key": "Planting site (plant)",
+   "common_name": "Planting site (plant)",
+   "allergen_group": "low_allergen",
+   "allergy_level": 0,
+   "wind_pollinated": false,
+   "bloom_months": [],
+   "symptoms": "Not applicable; this entry does not correspond to a pollen-producing tree species.",
+   "rationale": "Placeholder text with no botanical identity, so no pollen allergenicity can be assigned.",
+   "confidence": "low",
+   "trees": 409
+  },
+  "Syagrus romanzoffianum": {
+   "species_key": "Syagrus romanzoffianum",
+   "common_name": "Queen Palm",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    4,
+    5
+   ],
+   "symptoms": "Rarely causes symptoms; pollen is not a significant airborne allergen in spring (April\u2013May).",
+   "rationale": "Insect-pollinated queen palm has heavy pollen that is not primarily wind-dispersed, resulting in low airborne counts.",
+   "confidence": "medium",
+   "trees": 407
+  },
+  "Prunus serrulata": {
+   "species_key": "Prunus serrulata",
+   "common_name": "Japanese Cherry",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4
+   ],
+   "symptoms": "Minimal spring symptoms; Japanese cherry pollen is not a major airborne allergen.",
+   "rationale": "Insect-pollinated ornamental cherry, often with sterile double flowers, produces heavy pollen that stays near the tree.",
+   "confidence": "high",
+   "trees": 406
+  },
+  "Tristaniopsis laurina 'Elegant'": {
+   "species_key": "Tristaniopsis laurina 'Elegant'",
+   "common_name": "Elegant Water Gum",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    6,
+    7,
+    8
+   ],
+   "symptoms": "Negligible summer pollen symptoms (June\u2013August).",
+   "rationale": "Insect-pollinated Myrtaceae; pollen is not released in large airborne quantities.",
+   "confidence": "high",
+   "trees": 396
+  },
+  "Phoenix canariensis": {
+   "species_key": "Phoenix canariensis",
+   "common_name": "Canary Island Date Palm",
+   "allergen_group": "palm",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Spring allergic rhinitis and asthma from March to May.",
+   "rationale": "Wind-pollinated Canary Island date palm sheds abundant pollen; cross-reactive with other palms.",
+   "confidence": "medium",
+   "trees": 392
+  },
+  "Melaleuca quinquenervia": {
+   "species_key": "Melaleuca quinquenervia",
+   "common_name": "Paperbark",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    5,
+    6,
+    7,
+    8
+   ],
+   "symptoms": "Occasional mild rhinitis in late spring to summer (May\u2013August) in sensitized individuals.",
+   "rationale": "Primarily insect-pollinated, but some pollen can become airborne; however, concentrations remain low compared to wind-pollinated trees.",
+   "confidence": "medium",
+   "trees": 391
+  },
+  "Juniperus chinensis": {
+   "species_key": "Juniperus chinensis",
+   "common_name": "Chinese Juniper",
+   "allergen_group": "cypress",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    1,
+    2,
+    3
+   ],
+   "symptoms": "Severe winter/early spring rhinitis and asthma (January\u2013March).",
+   "rationale": "Wind-pollinated Cupressaceae (juniper/cedar) is highly allergenic; cross-reactive with cypress and other Cupressaceae.",
+   "confidence": "high",
+   "trees": 341
+  },
+  "Laurus nobilis": {
+   "species_key": "Laurus nobilis",
+   "common_name": "Bay Laurel",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Negligible pollen symptoms during spring bloom (March\u2013May).",
+   "rationale": "Dioecious insect-pollinated tree; pollen is not wind-dispersed.",
+   "confidence": "high",
+   "trees": 340
+  },
+  "Magnolia grandiflora 'Little Gem'": {
+   "species_key": "Magnolia grandiflora 'Little Gem'",
+   "common_name": "Little Gem Magnolia",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    6,
+    7,
+    8
+   ],
+   "symptoms": "No significant pollen allergy; summer bloom (June\u2013August) does not produce airborne pollen.",
+   "rationale": "Beetle-pollinated magnolia produces large, heavy pollen grains that are not wind-carried.",
+   "confidence": "high",
+   "trees": 328
+  },
+  "Schinus terebinthifolius": {
+   "species_key": "Schinus terebinthifolius",
+   "common_name": "Brazilian Pepper Tree",
+   "allergen_group": "other_wind",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Spring to early summer rhinitis and conjunctivitis (April\u2013June); can trigger asthma.",
+   "rationale": "Wind-dispersed Anacardiaceae pollen; cross-reactive with poison ivy (Toxicodendron) and other Anacardiaceae.",
+   "confidence": "medium",
+   "trees": 314
+  },
+  "Fraxinus uhdei": {
+   "species_key": "Fraxinus uhdei",
+   "common_name": "Tropical Ash",
+   "allergen_group": "ash",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    2,
+    3,
+    4
+   ],
+   "symptoms": "Spring hay fever with sneezing, nasal congestion, and itchy eyes from February to April.",
+   "rationale": "Wind-pollinated ash is highly allergenic; cross-reactive with olive and privet (Oleaceae).",
+   "confidence": "high",
+   "trees": 288
+  },
+  "Cordyline australis": {
+   "species_key": "Cordyline australis",
+   "common_name": "Cabbage Tree",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    6,
+    7,
+    8
+   ],
+   "symptoms": "No significant pollen symptoms; summer bloom (June\u2013August) is insect/bird-pollinated.",
+   "rationale": "Insect- and bird-pollinated; pollen is not airborne.",
+   "confidence": "high",
+   "trees": 287
+  },
+  "Ficus microcarpa": {
+   "species_key": "Ficus microcarpa",
+   "common_name": "Chinese Banyan",
+   "allergen_group": "low_allergen",
+   "allergy_level": 0,
+   "wind_pollinated": false,
+   "bloom_months": [
+    6,
+    7,
+    8
+   ],
+   "symptoms": "No airborne pollen; no allergy risk from this tree.",
+   "rationale": "Pollen is enclosed within the fig syconium and dispersed by specific pollinating wasps, never released into air.",
+   "confidence": "high",
+   "trees": 276
+  },
+  "Afrocarpus gracilior": {
+   "species_key": "Afrocarpus gracilior",
+   "common_name": "Fern Pine",
+   "allergen_group": "other_wind",
+   "allergy_level": 1,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Mild spring rhinitis in highly sensitive individuals (March\u2013May).",
+   "rationale": "Wind-pollinated gymnosperm, but Podocarpaceae pollen is generally less allergenic than pine; some cross-reactivity with other conifers possible.",
+   "confidence": "medium",
+   "trees": 273
+  },
+  "Pistacia chinensis": {
+   "species_key": "Pistacia chinensis",
+   "common_name": "Chinese pistache",
+   "allergen_group": "other_wind",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4
+   ],
+   "symptoms": "Early spring hay fever with sneezing, nasal congestion, and itchy eyes during March-April.",
+   "rationale": "Wind-pollinated Anacardiaceae with moderate allergenicity; cross-reactive with cashew and mango pollen.",
+   "confidence": "medium",
+   "trees": 266
+  },
+  "Callistemon viminalis": {
+   "species_key": "Callistemon viminalis",
+   "common_name": "Weeping bottlebrush",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    4,
+    5,
+    6,
+    7
+   ],
+   "symptoms": "Rarely causes pollen allergy symptoms because pollination is insect- and bird-mediated.",
+   "rationale": "Bee and bird pollinated Myrtaceae with heavy pollen that does not become airborne in significant amounts.",
+   "confidence": "high",
+   "trees": 252
+  },
+  "Acer buergeranum": {
+   "species_key": "Acer buergeranum",
+   "common_name": "Trident maple",
+   "allergen_group": "maple",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4
+   ],
+   "symptoms": "Severe early spring allergies including asthma, sneezing, and conjunctivitis in March-April.",
+   "rationale": "Maples are highly wind-pollinated and a leading cause of spring tree pollen allergy in San Francisco.",
+   "confidence": "high",
+   "trees": 250
+  },
+  "Pittosporum crassifolium": {
+   "species_key": "Pittosporum crassifolium",
+   "common_name": "Karo",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    4,
+    5
+   ],
+   "symptoms": "Minimal pollen symptoms; spring bloom may cause mild irritation only in highly sensitive individuals.",
+   "rationale": "Insect-pollinated shrub with negligible wind-dispersed pollen.",
+   "confidence": "high",
+   "trees": 236
+  },
+  "Fraxinus spp": {
+   "species_key": "Fraxinus spp",
+   "common_name": "Ash",
+   "allergen_group": "ash",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    2,
+    3,
+    4
+   ],
+   "symptoms": "Late winter to early spring severe allergies with sneezing, wheezing, and watery eyes from February-April.",
+   "rationale": "Ash pollen is highly allergenic and cross-reactive with olive pollen within the Oleaceae family.",
+   "confidence": "high",
+   "trees": 236
+  },
+  "Lagunaria patersonii": {
+   "species_key": "Lagunaria patersonii",
+   "common_name": "Cow itch tree",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    6,
+    7,
+    8
+   ],
+   "symptoms": "Summer pollen rarely causes allergy; note that irritating seed hairs are mechanical, not pollen-related.",
+   "rationale": "Bee-pollinated Malvaceae producing little airborne pollen.",
+   "confidence": "high",
+   "trees": 225
+  },
+  "Stump (use Grinder)": {
+   "species_key": "Stump (use Grinder)",
+   "common_name": "Stump (ground)",
+   "allergen_group": "low_allergen",
+   "allergy_level": 0,
+   "wind_pollinated": false,
+   "bloom_months": [],
+   "symptoms": "No pollen symptoms because a ground stump is non-living and produces no pollen.",
+   "rationale": "A removed stump is not a biological pollen source.",
+   "confidence": "high",
+   "trees": 214
+  },
+  "Geijera parviflora": {
+   "species_key": "Geijera parviflora",
+   "common_name": "Australian willow",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    5,
+    6,
+    7
+   ],
+   "symptoms": "Rarely associated with pollen allergy during late spring bloom.",
+   "rationale": "Primarily insect-pollinated Rutaceae with low airborne pollen levels.",
+   "confidence": "medium",
+   "trees": 203
+  },
+  "Pyrus calleryana 'Aristocrat'": {
+   "species_key": "Pyrus calleryana 'Aristocrat'",
+   "common_name": "Aristocrat callery pear",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4
+   ],
+   "symptoms": "Mild early spring symptoms in highly sensitive individuals; pollination is largely insect-mediated.",
+   "rationale": "Pear is bee-pollinated; the male cultivar 'Aristocrat' produces pollen but it is not wind-dispersed.",
+   "confidence": "high",
+   "trees": 200
+  },
+  "Myoporum laetum": {
+   "species_key": "Myoporum laetum",
+   "common_name": "Mouse-eared myoporum",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Negligible pollen allergy symptoms during spring-summer bloom.",
+   "rationale": "Insect-pollinated shrub with minimal airborne pollen.",
+   "confidence": "high",
+   "trees": 199
+  },
+  "Ceratonia siliqua": {
+   "species_key": "Ceratonia siliqua",
+   "common_name": "Carob",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Rare pollen allergy; spring flowers are pollinated by insects and flies.",
+   "rationale": "Carob is insect-pollinated and produces little wind-borne pollen.",
+   "confidence": "high",
+   "trees": 199
+  },
+  "Acacia baileyana": {
+   "species_key": "Acacia baileyana",
+   "common_name": "Cootamundra wattle",
+   "allergen_group": "acacia",
+   "allergy_level": 2,
+   "wind_pollinated": false,
+   "bloom_months": [
+    2,
+    3,
+    4
+   ],
+   "symptoms": "Late winter to spring moderate allergies with itchy eyes, sneezing, and asthma exacerbations.",
+   "rationale": "Acacia pollen is a known moderate allergen that becomes airborne in high volume despite insect vectors.",
+   "confidence": "medium",
+   "trees": 196
+  },
+  "Koelreuteria paniculata": {
+   "species_key": "Koelreuteria paniculata",
+   "common_name": "Goldenrain tree",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    6,
+    7,
+    8
+   ],
+   "symptoms": "Summer pollen rarely causes symptoms because pollination is bee-mediated.",
+   "rationale": "Primarily bee-pollinated Sapindaceae with minimal wind dispersal of pollen.",
+   "confidence": "medium",
+   "trees": 193
+  },
+  "Lyonothamnus floribundus subsp. asplenifolius": {
+   "species_key": "Lyonothamnus floribundus subsp. asplenifolius",
+   "common_name": "Catalina ironwood",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    5,
+    6
+   ],
+   "symptoms": "Minimal pollen allergy during late spring bloom.",
+   "rationale": "Insect-pollinated Rosaceae with low airborne pollen.",
+   "confidence": "high",
+   "trees": 186
+  },
+  "Eucalyptus polyanthemos": {
+   "species_key": "Eucalyptus polyanthemos",
+   "common_name": "Red box",
+   "allergen_group": "eucalyptus",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Low pollen allergy; eucalyptus pollen is heavy and not wind-borne.",
+   "rationale": "Bird and insect pollinated Myrtaceae with negligible airborne pollen.",
+   "confidence": "high",
+   "trees": 184
+  },
+  "Crataegus phaenopyrum": {
+   "species_key": "Crataegus phaenopyrum",
+   "common_name": "Washington hawthorn",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    4,
+    5
+   ],
+   "symptoms": "Mild spring pollen symptoms only in highly sensitive individuals.",
+   "rationale": "Hawthorn is insect-pollinated with limited wind-dispersed pollen.",
+   "confidence": "high",
+   "trees": 184
+  },
+  "Acer palmatum": {
+   "species_key": "Acer palmatum",
+   "common_name": "Japanese maple",
+   "allergen_group": "maple",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4
+   ],
+   "symptoms": "Early spring nasal congestion and sneezing in March-April.",
+   "rationale": "Japanese maple is wind-pollinated and shares allergenicity with other Acer species.",
+   "confidence": "high",
+   "trees": 179
+  },
+  "Eucalyptus citriodora": {
+   "species_key": "Eucalyptus citriodora",
+   "common_name": "Lemon-scented gum",
+   "allergen_group": "eucalyptus",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Negligible pollen allergy symptoms.",
+   "rationale": "Insect and bird pollinated; pollen is not wind-dispersed.",
+   "confidence": "high",
+   "trees": 167
+  },
+  "Acacia stenophylla": {
+   "species_key": "Acacia stenophylla",
+   "common_name": "Shoestring acacia",
+   "allergen_group": "acacia",
+   "allergy_level": 2,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Spring moderate allergies including rhinitis and asthma.",
+   "rationale": "Acacia genus pollen is moderately allergenic and can become airborne in sufficient quantities.",
+   "confidence": "medium",
+   "trees": 167
+  },
+  "Robinia x ambigua 'Purple Robe'": {
+   "species_key": "Robinia x ambigua 'Purple Robe'",
+   "common_name": "Purple Robe locust",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    5,
+    6
+   ],
+   "symptoms": "Minimal pollen symptoms; this hybrid cultivar may be sterile or produce low viable pollen.",
+   "rationale": "Locust is insect-pollinated and the 'Purple Robe' hybrid produces little wind-dispersed pollen.",
+   "confidence": "medium",
+   "trees": 165
+  },
+  "Eucalyptus sideroxylon": {
+   "species_key": "Eucalyptus sideroxylon",
+   "common_name": "Red Ironbark",
+   "allergen_group": "eucalyptus",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Late\u2011winter to spring respiratory symptoms such as sneezing, nasal congestion and itchy eyes when pollen is shed.",
+   "rationale": "Eucalyptus pollen is small enough to become airborne and is a known moderate allergen; cross\u2011reactivity with other Myrtaceae is limited.",
+   "confidence": "medium",
+   "trees": 162
+  },
+  "Populus nigra 'Italica'": {
+   "species_key": "Populus nigra 'Italica'",
+   "common_name": "Lombardy Poplar",
+   "allergen_group": "poplar",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    2,
+    3,
+    4
+   ],
+   "symptoms": "Early\u2011spring hay fever with sneezing, watery eyes and asthma exacerbations when male catkins release abundant pollen.",
+   "rationale": "Populus pollen is highly allergenic, produced in large quantities and wind\u2011dispersed, making it a major spring urban allergen.",
+   "confidence": "high",
+   "trees": 158
+  },
+  "Schinus molle": {
+   "species_key": "Schinus molle",
+   "common_name": "Peruvian Pepper Tree",
+   "allergen_group": "other_wind",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Spring to early\u2011summer rhinitis and conjunctivitis; some sensitive individuals report throat irritation.",
+   "rationale": "Dioecious wind\u2011pollinated Anacardiaceae tree whose pollen is moderately allergenic but not covered by the predefined family groups.",
+   "confidence": "medium",
+   "trees": 149
+  },
+  "Cupressus macrocarpa": {
+   "species_key": "Cupressus macrocarpa",
+   "common_name": "Monterey Cypress",
+   "allergen_group": "cypress",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    1,
+    2,
+    3,
+    12
+   ],
+   "symptoms": "Winter pollen allergy causing nasal congestion, sneezing and itchy throat during the rainy season.",
+   "rationale": "Cupressaceae pollen is highly allergenic and strongly cross\u2011reactive with juniper, cedar and other cypress species.",
+   "confidence": "high",
+   "trees": 148
+  },
+  "Liriodendron tulipifera": {
+   "species_key": "Liriodendron tulipifera",
+   "common_name": "Tulip Tree",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    5,
+    6
+   ],
+   "symptoms": "Rarely triggers pollen allergy; any symptoms are minimal because pollen is heavy and sticky.",
+   "rationale": "Beetle\u2011pollinated Magnoliaceae tree produces large pollen grains that are not wind\u2011dispersed.",
+   "confidence": "high",
+   "trees": 144
+  },
+  "Agonis flexuosa": {
+   "species_key": "Agonis flexuosa",
+   "common_name": "Australian Willow (Pepperberry)",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    5,
+    6,
+    7
+   ],
+   "symptoms": "Negligible airborne pollen; respiratory allergy is rare.",
+   "rationale": "Bee\u2011pollinated Myrtaceae shrub/tree with sticky pollen that does not become wind\u2011borne in significant amounts.",
+   "confidence": "medium",
+   "trees": 143
+  },
+  "Magnolia grandiflora 'Saint Mary'": {
+   "species_key": "Magnolia grandiflora 'Saint Mary'",
+   "common_name": "Southern Magnolia 'Saint Mary'",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    5,
+    6,
+    7,
+    8
+   ],
+   "symptoms": "Essentially no pollen allergy; reported reactions are usually fragrance sensitivity rather than pollen.",
+   "rationale": "Large beetle\u2011pollinated flowers produce little airborne pollen, typical of Magnolia cultivars.",
+   "confidence": "high",
+   "trees": 134
+  },
+  "Yucca gloriosa": {
+   "species_key": "Yucca gloriosa",
+   "common_name": "Adam's Needle",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    6,
+    7,
+    8
+   ],
+   "symptoms": "No significant pollen allergy; pollination is obligately tied to yucca moths.",
+   "rationale": "Sticky pollen masses are transferred by yucca moths and are not released into the air.",
+   "confidence": "high",
+   "trees": 132
+  },
+  "Trachycarpus fortunei": {
+   "species_key": "Trachycarpus fortunei",
+   "common_name": "Chinese Windmill Palm",
+   "allergen_group": "palm",
+   "allergy_level": 1,
+   "wind_pollinated": true,
+   "bloom_months": [
+    5,
+    6
+   ],
+   "symptoms": "Rarely causes allergy; occasional sneezing if standing near dense male plantings.",
+   "rationale": "Wind\u2011pollinated palm, but its pollen grains are relatively large and generally low in allergenic potency.",
+   "confidence": "medium",
+   "trees": 126
+  },
+  "Ceanothus 'Ray Hartman'": {
+   "species_key": "Ceanothus 'Ray Hartman'",
+   "common_name": "California Lilac 'Ray Hartman'",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Minimal pollen allergy; showy blue flower clusters attract bees and produce heavy pollen.",
+   "rationale": "Insect\u2011pollinated Rhamnaceae shrub whose pollen is not wind\u2011dispersed.",
+   "confidence": "high",
+   "trees": 123
+  },
+  "Platanus x hispanica 'Columbia'": {
+   "species_key": "Platanus x hispanica 'Columbia'",
+   "common_name": "London Plane Tree 'Columbia'",
+   "allergen_group": "plane",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Severe spring hay fever, asthma attacks and itchy eyes during peak pollen release.",
+   "rationale": "Platanus pollen is abundant, highly allergenic and wind\u2011borne, a leading cause of tree\u2011pollen allergy in cities.",
+   "confidence": "high",
+   "trees": 122
+  },
+  "Chamaerops humilis": {
+   "species_key": "Chamaerops humilis",
+   "common_name": "Mediterranean Fan Palm",
+   "allergen_group": "palm",
+   "allergy_level": 1,
+   "wind_pollinated": true,
+   "bloom_months": [
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Low allergenic potential; rare respiratory symptoms even near flowering specimens.",
+   "rationale": "Wind\u2011pollinated palm with pollen that is generally less allergenic than that of other anemophilous trees.",
+   "confidence": "medium",
+   "trees": 114
+  },
+  "Quercus agrifolia": {
+   "species_key": "Quercus agrifolia",
+   "common_name": "Coast Live Oak",
+   "allergen_group": "oak",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Spring oak pollen allergy with sneezing, nasal blockage and ocular itching; cross\u2011reactive with birch and beech.",
+   "rationale": "Fagaceae catkins release potent wind\u2011borne pollen that is a major allergen and cross\u2011reacts within Fagales.",
+   "confidence": "high",
+   "trees": 113
+  },
+  "Prunus x yedoensis": {
+   "species_key": "Prunus x yedoensis",
+   "common_name": "Yoshino Cherry",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4
+   ],
+   "symptoms": "Rarely allergenic; pollen is sticky and insect\u2011dispersed, so airborne exposure is minimal.",
+   "rationale": "Ornamental Rosaceae cherry pollinated by bees, producing negligible wind\u2011borne pollen.",
+   "confidence": "high",
+   "trees": 110
+  },
+  "Magnolia grandiflora 'Samuel Sommer'": {
+   "species_key": "Magnolia grandiflora 'Samuel Sommer'",
+   "common_name": "Southern Magnolia 'Samuel Sommer'",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    5,
+    6,
+    7,
+    8
+   ],
+   "symptoms": "No significant pollen allergy reported for this cultivar.",
+   "rationale": "Insect\u2011pollinated Magnolia with large pollen grains that are not wind\u2011dispersed.",
+   "confidence": "high",
+   "trees": 109
+  },
+  "Pinus radiata": {
+   "species_key": "Pinus radiata",
+   "common_name": "Monterey Pine",
+   "allergen_group": "pine",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Late\u2011winter to spring pine pollen allergy causing hay fever, nasal congestion and asthma.",
+   "rationale": "Abundant wind\u2011dispersed pine pollen is a potent allergen with cross\u2011reactivity to other Pinaceae.",
+   "confidence": "high",
+   "trees": 108
+  },
+  "Laurus x 'Saratoga'": {
+   "species_key": "Laurus x 'Saratoga'",
+   "common_name": "Sweet Bay 'Saratoga'",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Minimal pollen allergy; small flowers are pollinated by flies and bees.",
+   "rationale": "Lauraceae species with small insect\u2011pollinated flowers that produce little airborne pollen.",
+   "confidence": "high",
+   "trees": 107
+  },
+  "Planting site": {
+   "species_key": "Planting site",
+   "common_name": "Planting site (non\u2011species entry)",
+   "allergen_group": "low_allergen",
+   "allergy_level": 0,
+   "wind_pollinated": false,
+   "bloom_months": [],
+   "symptoms": "Not a plant; no pollen is produced.",
+   "rationale": "Input string does not correspond to a botanical species.",
+   "confidence": "low",
+   "trees": 105
+  },
+  "Planting site (cut)": {
+   "species_key": "Planting site (cut)",
+   "common_name": "Planting site (cut) (non\u2011species entry)",
+   "allergen_group": "low_allergen",
+   "allergy_level": 0,
+   "wind_pollinated": false,
+   "bloom_months": [],
+   "symptoms": "Not a plant; no pollen is produced.",
+   "rationale": "Input string does not correspond to a botanical species.",
+   "confidence": "low",
+   "trees": 104
+  },
+  "Celtis sinensis": {
+   "species_key": "Celtis sinensis",
+   "common_name": "Chinese Hackberry",
+   "allergen_group": "other_wind",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    2,
+    3,
+    4
+   ],
+   "symptoms": "Early\u2011spring rhinitis and conjunctivitis similar to elm allergy in sensitized individuals.",
+   "rationale": "Wind\u2011pollinated Cannabaceae tree with moderate allergenic pollen; falls outside the predefined genus/family groups.",
+   "confidence": "medium",
+   "trees": 103
+  },
+  "Rhaphiolepis \"Majestic Beauty\"": {
+   "species_key": "Rhaphiolepis \"Majestic Beauty\"",
+   "common_name": "Indian hawthorn 'Majestic Beauty'",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Rarely triggers pollen allergy; any symptoms are mild and limited to the spring bloom.",
+   "rationale": "Insect-pollinated Rosaceae with sticky pollen that is not wind-dispersed, so little becomes airborne.",
+   "confidence": "high",
+   "trees": 102
+  },
+  "Ficus nitida": {
+   "species_key": "Ficus nitida",
+   "common_name": "Indian laurel fig",
+   "allergen_group": "low_allergen",
+   "allergy_level": 0,
+   "wind_pollinated": false,
+   "bloom_months": [],
+   "symptoms": "No airborne pollen allergy because flowers are sealed inside the syconium and pollinated by fig wasps.",
+   "rationale": "Pollination occurs entirely within the closed fig fruit, so essentially no pollen is released to the air.",
+   "confidence": "high",
+   "trees": 100
+  },
+  "Podocarpus gracilor": {
+   "species_key": "Podocarpus gracilor",
+   "common_name": "Weeping podocarpus",
+   "allergen_group": "other_wind",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Spring respiratory symptoms (sneezing, itchy eyes, wheeze) from March to June in sensitized people.",
+   "rationale": "Wind-pollinated gymnosperm in Podocarpaceae; pollen is moderately allergenic but less potent than cypress or pine.",
+   "confidence": "low",
+   "trees": 100
+  },
+  "Rhamnus alaternus": {
+   "species_key": "Rhamnus alaternus",
+   "common_name": "Italian buckthorn",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Minimal airborne pollen; occasional mild spring irritation at most.",
+   "rationale": "Insect-pollinated Rhamnaceae with heavy pollen that stays on the plant rather than drifting on wind.",
+   "confidence": "high",
+   "trees": 99
+  },
+  "Arbutus unedo": {
+   "species_key": "Arbutus unedo",
+   "common_name": "Strawberry tree",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    1,
+    10,
+    11,
+    12
+   ],
+   "symptoms": "Rarely causes pollen allergy despite fall-winter bloom; symptoms, if any, are very mild.",
+   "rationale": "Bee-pollinated Ericaceae with pendulous flowers and sticky pollen, producing negligible airborne pollen.",
+   "confidence": "high",
+   "trees": 98
+  },
+  "patanus racemosa": {
+   "species_key": "patanus racemosa",
+   "common_name": "California sycamore",
+   "allergen_group": "plane",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Severe spring hay fever and asthma from March to May when male catkins shed dense clouds of highly allergenic pollen.",
+   "rationale": "Platanus (plane/sycamore) pollen is one of the most potent urban tree allergens, with strong cross-reactivity among Platanus species.",
+   "confidence": "high",
+   "trees": 97
+  },
+  "Paved Over": {
+   "species_key": "Paved Over",
+   "common_name": "Paved-over site (no tree)",
+   "allergen_group": "low_allergen",
+   "allergy_level": 0,
+   "wind_pollinated": false,
+   "bloom_months": [],
+   "symptoms": "No pollen produced; the former planting site is paved and contains no living plant.",
+   "rationale": "Non-plant surface, so there is no pollen release.",
+   "confidence": "high",
+   "trees": 95
+  },
+  "Planting site (pave)": {
+   "species_key": "Planting site (pave)",
+   "common_name": "Planting site in pavement (empty)",
+   "allergen_group": "low_allergen",
+   "allergy_level": 0,
+   "wind_pollinated": false,
+   "bloom_months": [],
+   "symptoms": "No pollen; the site is an empty pavement cutout without a tree.",
+   "rationale": "No living plant tissue present, therefore no airborne pollen.",
+   "confidence": "high",
+   "trees": 93
+  },
+  "Stump": {
+   "species_key": "Stump",
+   "common_name": "Tree stump",
+   "allergen_group": "low_allergen",
+   "allergy_level": 0,
+   "wind_pollinated": false,
+   "bloom_months": [],
+   "symptoms": "No pollen; a stump does not flower or shed pollen.",
+   "rationale": "Non-living woody remnant produces no pollen.",
+   "confidence": "high",
+   "trees": 89
+  },
+  "Pyrus calleryana 'Chanticleer'": {
+   "species_key": "Pyrus calleryana 'Chanticleer'",
+   "common_name": "Callery pear 'Chanticleer'",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4
+   ],
+   "symptoms": "Occasional mild spring allergy symptoms, but usually not a significant pollen source.",
+   "rationale": "Insect-pollinated Rosaceae; pollen is heavy and bee-carried, with limited wind dispersal.",
+   "confidence": "medium",
+   "trees": 89
+  },
+  "Melaleuca linariifolia": {
+   "species_key": "Melaleuca linariifolia",
+   "common_name": "Flax-leaf paperbark",
+   "allergen_group": "eucalyptus",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Minimal pollen allergy; at most mild spring symptoms in highly sensitized individuals.",
+   "rationale": "Myrtaceae matched to the eucalyptus group; insect-pollinated with little airborne pollen.",
+   "confidence": "medium",
+   "trees": 88
+  },
+  "Brahea edulis": {
+   "species_key": "Brahea edulis",
+   "common_name": "Guadalupe palm",
+   "allergen_group": "palm",
+   "allergy_level": 1,
+   "wind_pollinated": true,
+   "bloom_months": [
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Occasional mild spring respiratory symptoms if sensitized to palm pollen.",
+   "rationale": "Arecaceae pollen can be wind-dispersed in many palms but is generally weakly allergenic; placed in palm group.",
+   "confidence": "low",
+   "trees": 88
+  },
+  "Ceiba speciosa": {
+   "species_key": "Ceiba speciosa",
+   "common_name": "Silk floss tree",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    8,
+    9,
+    10
+   ],
+   "symptoms": "No significant pollen allergy; flowers are pollinated by bats and insects.",
+   "rationale": "Large bat/insect-pollinated Malvaceae flowers with sticky pollen that does not become airborne in quantity.",
+   "confidence": "high",
+   "trees": 86
+  },
+  "Hymenosporum flavum": {
+   "species_key": "Hymenosporum flavum",
+   "common_name": "Australian frangipani",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Rarely causes pollen allergy; any reaction is mild during the spring bloom.",
+   "rationale": "Insect-pollinated Pittosporaceae with pollen adapted to animal vectors, not wind.",
+   "confidence": "high",
+   "trees": 85
+  },
+  "Ligustrum japonicum": {
+   "species_key": "Ligustrum japonicum",
+   "common_name": "Japanese privet",
+   "allergen_group": "privet",
+   "allergy_level": 2,
+   "wind_pollinated": false,
+   "bloom_months": [
+    6,
+    7
+   ],
+   "symptoms": "Summer hay fever (June-July) with sneezing, nasal congestion, and itchy eyes in privet-allergic patients.",
+   "rationale": "Ligustrum pollen is a well-documented moderate allergen and cross-reacts with olive within Oleaceae.",
+   "confidence": "high",
+   "trees": 85
+  },
+  "Tilia cordata": {
+   "species_key": "Tilia cordata",
+   "common_name": "Littleleaf linden",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    6,
+    7
+   ],
+   "symptoms": "Rarely causes noticeable pollen allergy; occasional mild summer symptoms.",
+   "rationale": "Primarily bee-pollinated with sticky pollen and limited airborne dispersal; no listed genus/family match, so low_allergen.",
+   "confidence": "medium",
+   "trees": 85
+  },
+  "Pittosporum tenuifolium": {
+   "species_key": "Pittosporum tenuifolium",
+   "common_name": "Kohuhu",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Minimal airborne pollen; rarely triggers allergy symptoms.",
+   "rationale": "Insect-pollinated Pittosporaceae with sticky pollen, producing little wind-borne pollen.",
+   "confidence": "high",
+   "trees": 85
+  },
+  "Photinia fraseri": {
+   "species_key": "Photinia fraseri",
+   "common_name": "Chinese photinia",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    4,
+    5
+   ],
+   "symptoms": "Rarely causes pollen allergy; spring bloom is bee-pollinated.",
+   "rationale": "Insect-pollinated Rosaceae; pollen is not wind-dispersed and airborne levels are low.",
+   "confidence": "high",
+   "trees": 81
+  },
+  "Taxus baccata": {
+   "species_key": "Taxus baccata",
+   "common_name": "English yew",
+   "allergen_group": "other_wind",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    2,
+    3,
+    4
+   ],
+   "symptoms": "Late-winter to early-spring hay fever (February-April) in yew-sensitive individuals.",
+   "rationale": "Wind-pollinated Taxaceae gymnosperm; pollen is a moderate allergen and falls outside the listed conifer groups.",
+   "confidence": "medium",
+   "trees": 81
+  },
+  "Prunus domestica 'Mariposa'": {
+   "species_key": "Prunus domestica 'Mariposa'",
+   "common_name": "Plum 'Mariposa'",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    2,
+    3,
+    4
+   ],
+   "symptoms": "Minimal airborne pollen; occasional mild late-winter/spring irritation in sensitized people.",
+   "rationale": "Bee-pollinated Rosaceae fruit tree with heavy pollen that is not readily wind-dispersed.",
+   "confidence": "medium",
+   "trees": 80
+  },
+  "Magnolia grandiflora 'Russet'": {
+   "species_key": "Magnolia grandiflora 'Russet'",
+   "common_name": "Southern magnolia 'Russet'",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    4,
+    5,
+    6,
+    7
+   ],
+   "symptoms": "Rarely causes airborne pollen allergy; may trigger mild sneezing in late spring if directly exposed to blooming flowers.",
+   "rationale": "Insect-pollinated Magnoliaceae with heavy, sticky pollen grains that rarely become airborne and show no cross-reactivity with common wind-borne allergens.",
+   "confidence": "high",
+   "trees": 79
+  },
+  "Sequoia sempervirens": {
+   "species_key": "Sequoia sempervirens",
+   "common_name": "Coast redwood",
+   "allergen_group": "cypress",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    1,
+    2,
+    3
+   ],
+   "symptoms": "Winter allergic rhinitis and asthma exacerbations from January through March, often mistaken for lingering colds.",
+   "rationale": "Wind-pollinated Cupressaceae conifer whose pollen cross-reacts with juniper and cedar; moderate allergenicity in coastal winter pollen counts.",
+   "confidence": "medium",
+   "trees": 78
+  },
+  "Potential Site": {
+   "species_key": "Potential Site",
+   "common_name": "Potential Site (placeholder)",
+   "allergen_group": "low_allergen",
+   "allergy_level": 0,
+   "wind_pollinated": false,
+   "bloom_months": [],
+   "symptoms": "No pollen data available; entry is a placeholder with no identified botanical species.",
+   "rationale": "Not a recognized species; assigned zero allergenicity pending identification.",
+   "confidence": "low",
+   "trees": 77
+  },
+  "Dodonaea viscosa 'Purpurea'": {
+   "species_key": "Dodonaea viscosa 'Purpurea'",
+   "common_name": "Purple hop bush",
+   "allergen_group": "other_wind",
+   "allergy_level": 1,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "symptoms": "Mild spring and early-summer allergy symptoms such as nasal congestion and itchy eyes in sensitive individuals.",
+   "rationale": "Wind-pollinated Sapindaceae with low pollen production; limited cross-reactivity with maple (Acer) but generally low allergenic impact.",
+   "confidence": "medium",
+   "trees": 77
+  },
+  "Chitalpa tashkentensis": {
+   "species_key": "Chitalpa tashkentensis",
+   "common_name": "Chitalpa",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    6,
+    7,
+    8,
+    9
+   ],
+   "symptoms": "Minimal airborne pollen allergy; summer blooming rarely triggers respiratory symptoms.",
+   "rationale": "Insect-pollinated Bignoniaceae hybrid with heavy pollen that is not wind-dispersed; no known cross-reactivity with major aeroallergens.",
+   "confidence": "high",
+   "trees": 72
+  },
+  "Leptospermum laevigatum": {
+   "species_key": "Leptospermum laevigatum",
+   "common_name": "Australian tea tree",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Occasional mild eye and nasal irritation in spring if in close proximity to flowering shrubs.",
+   "rationale": "Insect-pollinated Myrtaceae with sticky, heavy pollen grains that do not become airborne; negligible cross-reactivity with eucalyptus pollen.",
+   "confidence": "high",
+   "trees": 70
+  },
+  "Cupaniopsis anacardioides": {
+   "species_key": "Cupaniopsis anacardioides",
+   "common_name": "Tuckeroo",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    4,
+    5,
+    6,
+    7
+   ],
+   "symptoms": "Rare airborne pollen allergy; may cause mild sneezing in late spring near blooming trees.",
+   "rationale": "Insect-pollinated Sapindaceae with limited airborne pollen; no significant cross-reactivity with wind-pollinated tree allergens.",
+   "confidence": "medium",
+   "trees": 69
+  },
+  "Malus floribunda": {
+   "species_key": "Malus floribunda",
+   "common_name": "Japanese flowering crabapple",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Minimal spring pollen allergy; occasional sneezing or watery eyes if directly under blooming canopy.",
+   "rationale": "Insect-pollinated Rosaceae with heavy pollen not dispersed by wind; low allergenicity and no cross-reactivity with birch or oak.",
+   "confidence": "high",
+   "trees": 67
+  },
+  "Cinnamomum camphora": {
+   "species_key": "Cinnamomum camphora",
+   "common_name": "Camphor tree",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Rare airborne pollen allergy; possible mild respiratory irritation in spring from aromatic foliage rather than pollen.",
+   "rationale": "Insect-pollinated Lauraceae with low airborne pollen counts; camphor scent may irritate but pollen is not wind-borne.",
+   "confidence": "high",
+   "trees": 66
+  },
+  "Pinus canariensis": {
+   "species_key": "Pinus canariensis",
+   "common_name": "Canary Island pine",
+   "allergen_group": "pine",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Spring hay fever with nasal congestion, sneezing, and itchy eyes peaking from March to May.",
+   "rationale": "Wind-pollinated Pinaceae producing abundant, buoyant pollen that cross-reacts with other conifers; moderate allergenicity.",
+   "confidence": "high",
+   "trees": 65
+  },
+  "Magnolia doltsopa": {
+   "species_key": "Magnolia doltsopa",
+   "common_name": "Magnolia doltsopa",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    2,
+    3,
+    4
+   ],
+   "symptoms": "Minimal late-winter to early-spring pollen allergy; symptoms are rare and mild.",
+   "rationale": "Insect-pollinated magnolia with heavy, sticky pollen that rarely becomes airborne; no cross-reactivity with wind-pollinated trees.",
+   "confidence": "high",
+   "trees": 65
+  },
+  "Carpinus betulus": {
+   "species_key": "Carpinus betulus",
+   "common_name": "European hornbeam",
+   "allergen_group": "other_wind",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    2,
+    3,
+    4
+   ],
+   "symptoms": "Severe early-spring allergic rhinitis and asthma from February to April, often cross-reactive with birch pollen.",
+   "rationale": "Wind-pollinated Betulaceae with highly allergenic pollen that cross-reacts strongly with birch (Betula) and hazel; high allergenicity in spring.",
+   "confidence": "medium",
+   "trees": 64
+  },
+  "Aesculus x carnea": {
+   "species_key": "Aesculus x carnea",
+   "common_name": "Red horse chestnut",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    4,
+    5,
+    6
+   ],
+   "symptoms": "Minimal spring pollen allergy; may cause mild symptoms if sensitive to horse chestnut in April\u2013June.",
+   "rationale": "Insect-pollinated Sapindaceae hybrid with heavy, sticky pollen not dispersed by wind; low allergenic potential.",
+   "confidence": "high",
+   "trees": 63
+  },
+  "Quercus suber": {
+   "species_key": "Quercus suber",
+   "common_name": "Cork oak",
+   "allergen_group": "oak",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Severe spring hay fever with sneezing, nasal congestion, and asthma exacerbations from March through May.",
+   "rationale": "Wind-pollinated Fagaceae with highly allergenic catkin pollen that cross-reacts with other oak species and birch; high allergenicity.",
+   "confidence": "high",
+   "trees": 63
+  },
+  "Fraxinus oxycarpa": {
+   "species_key": "Fraxinus oxycarpa",
+   "common_name": "Caucasian ash",
+   "allergen_group": "ash",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    2,
+    3,
+    4
+   ],
+   "symptoms": "Severe late-winter to early-spring rhinitis and conjunctivitis, often cross-reactive with olive pollen.",
+   "rationale": "Wind-pollinated Oleaceae with potent pollen that cross-reacts with olive (Olea) and privet; high allergenicity in early spring.",
+   "confidence": "high",
+   "trees": 63
+  },
+  "Quercus virginiana": {
+   "species_key": "Quercus virginiana",
+   "common_name": "Southern live oak",
+   "allergen_group": "oak",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "High spring pollen allergy with sneezing, itchy eyes, and asthma from March to May.",
+   "rationale": "Wind-pollinated evergreen oak with highly allergenic pollen cross-reactive with other Quercus species; high allergenicity.",
+   "confidence": "high",
+   "trees": 62
+  },
+  "Cupressus sempervirens": {
+   "species_key": "Cupressus sempervirens",
+   "common_name": "Italian cypress",
+   "allergen_group": "cypress",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    1,
+    2,
+    3
+   ],
+   "symptoms": "Winter allergy symptoms including nasal congestion, sneezing, and asthma from January to March.",
+   "rationale": "Wind-pollinated Cupressaceae with highly allergenic pollen that cross-reacts with juniper and cedar; peak winter allergen in San Francisco.",
+   "confidence": "high",
+   "trees": 62
+  },
+  "Liquidambar styraciflua 'Rotundiloba'": {
+   "species_key": "Liquidambar styraciflua 'Rotundiloba'",
+   "common_name": "Fruitless sweetgum 'Rotundiloba'",
+   "allergen_group": "sweetgum",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Spring allergic rhinitis with nasal congestion and sneezing peaking March\u2013May.",
+   "rationale": "Wind-pollinated Altingiaceae; the fruitless cultivar still sheds allergenic pollen with moderate cross-reactivity to other Hamamelidaceae.",
+   "confidence": "high",
+   "trees": 61
+  },
+  "Betula pendula": {
+   "species_key": "Betula pendula",
+   "common_name": "European white birch",
+   "allergen_group": "birch",
+   "allergy_level": 3,
+   "wind_pollinated": true,
+   "bloom_months": [
+    2,
+    3,
+    4
+   ],
+   "symptoms": "Severe early-spring hay fever with sneezing, itchy eyes, and asthma, often accompanied by oral allergy syndrome to apple or hazelnut.",
+   "rationale": "Wind-pollinated Betulaceae with highly allergenic pollen that cross-reacts with alder, hazel, and certain foods; high allergenicity.",
+   "confidence": "high",
+   "trees": 60
+  },
+  "Podocarpus macrophyllus": {
+   "species_key": "Podocarpus macrophyllus",
+   "common_name": "Yew podocarpus",
+   "allergen_group": "other_wind",
+   "allergy_level": 1,
+   "wind_pollinated": true,
+   "bloom_months": [
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Mild spring allergy symptoms if sensitive; generally low airborne pollen counts.",
+   "rationale": "Wind-pollinated Podocarpaceae with low allergenic pollen and minimal cross-reactivity with pine or cypress.",
+   "confidence": "medium",
+   "trees": 59
+  },
+  "Syzygium paniculatum": {
+   "species_key": "Syzygium paniculatum",
+   "common_name": "Australian Brush Cherry (Lilly Pilly)",
+   "allergen_group": "low_allergen",
+   "allergy_level": 1,
+   "wind_pollinated": false,
+   "bloom_months": [
+    5,
+    6,
+    7,
+    8
+   ],
+   "symptoms": "Rarely triggers pollen allergy; any minor reactions occur in late spring to summer when the insect-pollinated flowers are open.",
+   "rationale": "Insect-pollinated Myrtaceae that produces heavy, sticky pollen not readily dispersed by wind, resulting in minimal airborne allergen.",
+   "confidence": "high",
+   "trees": 59
+  },
+  "Pinus pinea": {
+   "species_key": "Pinus pinea",
+   "common_name": "Stone Pine (Italian Stone Pine)",
+   "allergen_group": "pine",
+   "allergy_level": 2,
+   "wind_pollinated": true,
+   "bloom_months": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "symptoms": "Late winter to early spring hay fever with sneezing, nasal congestion, and itchy eyes during peak pine pollen release.",
+   "rationale": "Wind-pollinated conifer shedding abundant yellow pollen; potential cross-reactivity with other members of Pinaceae.",
+   "confidence": "high",
+   "trees": 59
+  }
+ }
+}

@@ -1,0 +1,6 @@
+{
+  "_note": "Hand corrections after reviewing Mistral's output for the most common species. Insect-pollinated Prunus and Pyrus shed little airborne pollen.",
+  "Prunus cerasifera": {"allergen_group": "low_allergen", "allergy_level": 1, "wind_pollinated": false},
+  "Pyrus calleryana": {"allergen_group": "low_allergen", "allergy_level": 1, "wind_pollinated": false},
+  "Planting site (plant)": {"allergen_group": "low_allergen", "allergy_level": 0}
+}
