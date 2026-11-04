@@ -5,195 +5,139 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>Clean Route</title>
-  <meta name="description" content="Walking routes through San Francisco with less of the pollen that sets you off, and less traffic if you have asthma.">
+  <meta name="description" content="Walking routes through San Francisco with less of the pollen that sets you off.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap">
-  <link rel="stylesheet" href="landing.css?v=2">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.css">
+  <link rel="stylesheet" href="landing.css?v=4">
 </head>
 <body>
   <header class="nav">
-    <a class="brand" href="#top">Clean Route</a>
-    <nav aria-label="Sections">
-      <a href="#how">How it works</a>
-      <a href="#results">Results</a>
-      <a href="#elastic">Elastic</a>
-      <a href="#mistral">Mistral</a>
-      <a href="#data">Data</a>
-    </nav>
+    <a class="brand" href="#hero">Clean Route</a>
     <a class="btn btn-small" href="map.html">Open the map</a>
   </header>
+  <nav class="dots" aria-label="Slides"></nav>
 
-  <main id="top">
-    <section class="hero wrap">
+  <main>
+    <section class="slide hero" id="hero">
+      <div id="hero-map" class="hero-map" aria-label="Live map of allergenic trees, heavy traffic and two walks from 33 New Montgomery to Dolores Park"></div>
       <div class="hero-copy">
-        <p class="eyebrow">Allergy and asthma walking routes for San Francisco</p>
-        <h1>Walk the city with less of the pollen that sets you off.</h1>
-        <p class="lede">Maps find the fastest walk. They don't know that the London planes on your street are your problem. Clean Route learns what you react to once, then routes around those trees and, if you have asthma, around heavy traffic too.</p>
-        <div class="cta">
-          <a class="btn" href="map.html">Open the map</a>
-          <a class="link" href="#results">See the measured results</a>
+        <h1>Walk SF with less of what sets you off.</h1>
+        <p class="lede">Routes around your allergy trees and, with asthma, heavy traffic.</p>
+        <div class="live" id="hero-live" hidden>
+          <div><b id="live-pollen">0%</b><span>less pollen</span></div>
+          <div><b id="live-air">0%</b><span>less traffic pollution</span></div>
+          <div><b id="live-min">+0</b><span>extra minutes</span></div>
         </div>
+        <p class="live-note" id="hero-note" hidden>Venue to Dolores Park, planning for April, live traffic</p>
+        <a class="btn" href="map.html">Open the map</a>
       </div>
-      <figure class="hero-map">
-        <svg id="hero-map" viewBox="0 0 600 600" role="img" aria-label="Map of allergenic tree blocks and heavy traffic in San Francisco, with the shortest and cleaner walks from 33 New Montgomery to Dolores Park"></svg>
-        <figcaption>
-          <span id="hero-caption">Real data: allergenic trees by block from Elastic, heavy traffic from TomTom.</span>
-          <span class="key"><i class="swatch clean"></i>Clean <i class="swatch short"></i>Shortest <i class="swatch hot"></i>Trees and traffic</span>
-        </figcaption>
-      </figure>
-    </section>
-
-    <section class="stats wrap" aria-label="Project size">
-      <div><b id="stat-trees">60,645</b><span>street tree records indexed</span></div>
-      <div><b>31,973</b><span>street segments scored</span></div>
-      <div><b>122</b><span>tree species rated</span></div>
-      <div><b>57,293</b><span>places searchable</span></div>
-    </section>
-
-    <section class="wrap band" id="how">
-      <h2>Who it helps, and how</h2>
-      <p class="sub">For anyone with tree pollen allergies or asthma who walks in the city. The city records every street tree, but nothing about which ones trigger allergies.</p>
-      <ol class="steps">
-        <li><span>1</span><h3>Say it once</h3><p>"I'm allergic to sycamore and olive, and I have asthma." Mistral saves that as a profile, including related trees: sycamore means plane trees.</p></li>
-        <li><span>2</span><h3>Elastic scores every street</h3><p>Geo aggregations add up each street's nearby trees, weighted by allergy level, trunk size and what's in season for you.</p></li>
-        <li><span>3</span><h3>Get a cleaner walk</h3><p>Dijkstra tries 12 trade-offs and keeps the shortest detour that gets most of the saving. It searches up to 30% longer than the direct walk.</p></li>
-      </ol>
-      <div class="features">
-        <div><h3>Remembers you</h3><p>Register by voice or text. Every route after that uses your profile.</p></div>
-        <div><h3>Just say where to</h3><p>It uses your current location, so you only enter a destination.</p></div>
-        <div><h3>Live traffic for asthma</h3><p>TomTom congestion refreshes every 5 minutes and steers you off busy roads.</p></div>
-        <div><h3>Knows the season</h3><p>The month comes from today's date. You can also plan ahead for April.</p></div>
-        <div><h3>Danger map</h3><p>Blocks go from yellow to red with your pollen load. Heavy traffic is drawn on the streets.</p></div>
-        <div><h3>Shows its proof</h3><p>Each route is re-measured by a live Elastic query you can open on screen.</p></div>
+      <div class="hero-key">
+        <span><i class="line clean"></i>Clean Route</span>
+        <span><i class="line short"></i>Shortest</span>
+        <span><i class="dot-key"></i>Your trees</span>
+        <span><i class="line traffic"></i>Heavy traffic</span>
       </div>
     </section>
 
-    <section class="wrap band" id="results">
-      <h2>Measured, not promised</h2>
-      <p class="sub">Median of random walks across the area, planning for April. These are modelled exposure figures, not measured pollen or symptoms.</p>
-      <div class="grid2">
-        <article class="card">
-          <h3>Reduction compared with the shortest walk</h3>
-          <div id="chart-reductions" class="bars"></div>
-          <p class="note" id="note-reductions"></p>
-        </article>
-        <article class="card">
-          <h3>Metres walked per trip, with asthma on</h3>
-          <div class="legend"><span><i class="swatch short"></i>Shortest</span><span><i class="swatch clean"></i>Clean Route</span></div>
-          <div id="chart-air" class="bars"></div>
-          <p class="note" id="note-air"></p>
-        </article>
+    <section class="slide" id="how">
+      <h2>From one sentence to a cleaner walk</h2>
+      <div class="flow">
+        <div class="node"><svg viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3"/></svg><b>Say it once</b><em class="m">Mistral</em></div>
+        <div class="link-line"></div>
+        <div class="node"><svg viewBox="0 0 24 24"><path d="M12 3 6 11h3l-4 6h14l-4-6h3zM12 17v4"/></svg><b>Score every street</b><em class="e">Elastic</em></div>
+        <div class="link-line"></div>
+        <div class="node"><svg viewBox="0 0 24 24"><path d="M6 20c6 0 2-8 7-8s6-3 5-8"/><circle cx="6" cy="20" r="1.5"/><circle cx="18" cy="4" r="1.5"/></svg><b>Find the cleaner walk</b><em class="d">Dijkstra</em></div>
+        <div class="link-line"></div>
+        <div class="node"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg><b>Prove it</b><em class="e">Elastic</em></div>
       </div>
-      <div class="grid2">
-        <article class="card">
-          <h3>A few trees carry most of the problem</h3>
-          <div id="chart-groups" class="bars"></div>
-          <p class="note" id="note-groups"></p>
-        </article>
-        <article class="card">
-          <h3>Pollen load through the year</h3>
-          <div id="chart-months" class="columns"></div>
-          <p class="note">Share of the yearly peak. Based on bloom months from Mistral, which we haven't validated.</p>
-        </article>
+      <div class="numbers">
+        <div><b data-count="60645">0</b><span>street tree records</span></div>
+        <div><b data-count="31973">0</b><span>streets scored</span></div>
+        <div><b data-count="122">0</b><span>species rated</span></div>
+        <div><b data-count="57293">0</b><span>places searchable</span></div>
       </div>
     </section>
 
-    <section class="wrap band" id="elastic">
+    <section class="slide" id="results">
+      <h2>Measured on hundreds of random walks</h2>
+      <div class="gauges">
+        <figure class="gauge" data-key="pollen"><div class="ring"><svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="52"/><circle class="arc" cx="60" cy="60" r="52"/></svg><b>0%</b></div><figcaption>less pollen<small id="pollen-100"></small></figcaption></figure>
+        <figure class="gauge blue" data-key="air"><div class="ring"><svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="52"/><circle class="arc" cx="60" cy="60" r="52"/></svg><b>0%</b></div><figcaption>less traffic pollution<small>estimated, asthma on</small></figcaption></figure>
+        <figure class="gauge amber" data-key="time"><div class="ring"><svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="52"/><circle class="arc" cx="60" cy="60" r="52"/></svg><b>+0</b></div><figcaption>extra minutes<small id="time-of"></small></figcaption></figure>
+        <div class="versus" id="versus"></div>
+      </div>
+      <p class="fine" id="results-fine"></p>
+    </section>
+
+    <section class="slide" id="insight">
+      <h2 id="insight-title">A few trees carry most of the problem</h2>
+      <div class="insight">
+        <figure class="waffle-box"><div class="waffle" id="waffle-trees"></div><figcaption id="waffle-trees-cap">of all trees</figcaption></figure>
+        <figure class="waffle-box"><div class="waffle hot" id="waffle-load"></div><figcaption id="waffle-load-cap">of all pollen load</figcaption></figure>
+        <figure class="months-box"><div class="columns" id="months"></div><figcaption>Pollen load by month<small>bloom months not yet validated</small></figcaption></figure>
+      </div>
+      <p class="names" id="top-names"></p>
+    </section>
+
+    <section class="slide" id="elastic">
       <h2>Elastic does the math</h2>
-      <p class="sub">Elastic isn't only storage here. It computes the score behind every street, and it proves every route.</p>
-      <div class="grid2">
-        <ul class="uses">
-          <li><b>Street scoring</b><code>geo_shape</code> + <code>terms</code> + <code>sum</code> in <code>_msearch</code>, across 31,973 segments</li>
-          <li><b>Route proof</b>a live aggregation sums the distinct trees around each finished route</li>
-          <li><b>Danger map</b><code>geotile_grid</code> + <code>geo_centroid</code> + <code>sum</code> by block</li>
-          <li><b>Place search</b><code>search_as_you_type</code>, fuzzy matching and a distance boost over 57,293 places</li>
-          <li><b>Symptom search</b>RRF hybrid over BM25 and <code>semantic_text</code></li>
-          <li><b>Live traffic</b>congestion is stored per street every 5 minutes</li>
-        </ul>
-        <article class="code"><h3>How one street gets its score</h3><pre><code>{
-  "size": 0,
-  "query": {"bool": {"filter": [
-    {"range": {"level": {"gte": 1}}},
-    {"geo_shape": {"location": {
-      "shape": street_buffer_polygon,
-      "relation": "intersects"}}}
-  ]}},
-  "aggs": {"by_group": {
-    "terms": {"field": "allergen_group", "size": 25},
-    "aggs": {"weight": {"sum": {"field": "weight"}}}
-  }}
-}</code></pre></article>
+      <div class="split">
+        <figure class="geo">
+          <svg id="geo" viewBox="0 0 560 320" role="img" aria-label="Diagram: a buffer sweeps along a street and sums the weight of the trees inside it"></svg>
+          <figcaption>Diagram: one street's score. <code>geo_shape</code> finds its trees, <code>sum</code> adds their weight.</figcaption>
+        </figure>
+        <div class="elastic-side">
+          <pre class="code"><code>"filter": {"geo_shape": {"location": {
+    "shape": street_buffer,
+    "relation": "intersects"}}},
+"aggs": {"by_group": {
+  "terms": {"field": "allergen_group"},
+  "aggs": {"weight": {
+    "sum": {"field": "weight"}}}}}</code></pre>
+          <div class="chips">
+            <span>geo_shape</span><span>_msearch</span><span>sum</span><span>geotile_grid</span><span>geo_centroid</span><span>search_as_you_type</span><span>RRF hybrid</span><span>semantic_text</span>
+          </div>
+          <div class="check"><b data-count="436">0</b><span>trees by Elastic</span><i>vs</i><b data-count="441">0</b><span>by a separate count</span></div>
+        </div>
       </div>
-      <p class="callout"><b>Checked independently:</b> Elastic's route totals match a separate count we ran outside it: 436 vs 441, 93 vs 94 and 72 vs 72 trees.</p>
     </section>
 
-    <section class="wrap band" id="mistral">
+    <section class="slide" id="mistral">
       <h2>Mistral fills the gap in the data</h2>
-      <p class="sub">The city's data names each tree's species but says nothing about allergies. Mistral supplies that, then handles the voice and language.</p>
-      <div class="models">
-        <div><h3>Large 4</h3><p>Built the allergen table: allergy level, bloom months and symptoms for 122 species, 93% of identified trees.</p></div>
-        <div><h3>Voxtral</h3><p>Turns speech into text for registration, so you can just say what you have.</p></div>
-        <div><h3>Ministral 14B</h3><p>Turns that sentence into a typed profile with structured output, including related trees.</p></div>
-        <div><h3>mistral-embed</h3><p>Powers "not sure which trees affect you?" through Elastic <code>semantic_text</code>.</p></div>
+      <div class="split">
+        <div class="demo">
+          <div class="say"><svg viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span id="typed"></span><i class="caret"></i></div>
+          <div class="arrow" aria-hidden="true"></div>
+          <div class="result" id="parsed"></div>
+        </div>
+        <div class="models">
+          <div><b>Large 4</b><span>rated 122 species</span></div>
+          <div><b>Voxtral</b><span>speech to text</span></div>
+          <div><b>Ministral 14B</b><span>text to profile</span></div>
+          <div><b>mistral-embed</b><span>symptom search</span></div>
+        </div>
       </div>
-      <div class="grid2">
-        <article class="card">
-          <h3>We didn't just trust the model</h3>
-          <p class="body">We checked Large 4's ratings against a published source, Pollen Library, on 46 species with a published rating to compare. Published ratings win wherever they exist.</p>
-          <div class="seg" role="img" aria-label="Mistral's rating versus published: 21 matched, 21 higher, 4 lower">
-            <span class="s1" style="flex:21">21</span><span class="s2" style="flex:21">21</span><span class="s3" style="flex:4">4</span>
-          </div>
-          <div class="legend"><span><i class="swatch s1"></i>Matched</span><span><i class="swatch s2"></i>Mistral rated higher</span><span><i class="swatch s3"></i>Lower</span></div>
-        </article>
-        <article class="card">
-          <h3>Where the ratings in use come from</h3>
-          <p class="body">Share of total exposure weight, after the cross-check. About a quarter still rests on Mistral alone, and we say so.</p>
-          <div class="seg" role="img" aria-label="69.4% published for the species, 6.7% published for a close relative, 23.8% Mistral only">
-            <span class="s1" style="flex:69.4">69%</span><span class="s2" style="flex:6.7">7%</span><span class="s3" style="flex:23.8">24%</span>
-          </div>
-          <div class="legend"><span><i class="swatch s1"></i>Published, species</span><span><i class="swatch s2"></i>Published, close relative</span><span><i class="swatch s3"></i>Mistral only</span></div>
-        </article>
+      <div class="trust">
+        <div class="trust-head">Then we checked its ratings against a published source</div>
+        <div class="seg" id="trust"><span class="s1" data-w="69.4">69%</span><span class="s2" data-w="6.7">7%</span><span class="s3" data-w="23.8">24%</span></div>
+        <div class="legend"><span><i class="s1"></i>Published, species</span><span><i class="s2"></i>Published, close relative</span><span><i class="s3"></i>Mistral only</span></div>
       </div>
     </section>
 
-    <section class="wrap band" id="data">
-      <h2>The data, and its limits</h2>
-      <div class="grid2">
-        <div>
-          <h3 class="plain">What it covers</h3>
-          <p class="body">A 3 km radius around central San Francisco, about 28 km²: downtown, SoMa, the Mission, Hayes Valley and Pacific Heights. That's 60,645 of the city's 138,778 mapped tree records, or 44%.</p>
-          <div class="seg" role="img" aria-label="44% of mapped San Francisco trees are covered"><span class="s1" style="flex:60645">44% covered</span><span class="s4" style="flex:78133"></span></div>
-          <h3 class="plain">Sources</h3>
-          <ul class="plainlist">
-            <li><a href="https://data.sf.gov/City-Infrastructure/San-Francisco-Street-Tree-Inventory/tkzw-k3nq/about_data">SF Street Tree Inventory</a> (DataSF)</li>
-            <li>SF Air Pollutant Exposure Zone (DataSF)</li>
-            <li>TomTom live traffic flow</li>
-            <li>OpenStreetMap streets and places</li>
-            <li>Pollen Library published ratings</li>
-          </ul>
-        </div>
-        <div>
-          <h3 class="plain">What we don't claim</h3>
-          <ul class="plainlist">
-            <li><b>Not live pollen.</b> This is estimated exposure from tree records.</li>
-            <li><b>Pollen travels.</b> Counting trees within 100 m, the saving is about 20%, not 70%.</li>
-            <li><b>Street trees only.</b> Parks and private trees aren't in the data.</li>
-            <li><b>Congestion isn't a car count.</b> It's speed, and our traffic pollution score is uncalibrated.</li>
-            <li><b>Not medical advice.</b> We haven't measured symptoms.</li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <section class="wrap closing">
+    <section class="slide closing" id="end">
       <h2>Try a walk.</h2>
-      <a class="btn" href="map.html">Open the map</a>
+      <a class="btn btn-big" href="map.html">Open the map</a>
+      <div class="cover">
+        <div><b>3 km</b><span>radius, central SF</span></div>
+        <div><b>44%</b><span>of SF's mapped trees</span></div>
+        <div><b>5 min</b><span>traffic refresh</span></div>
+      </div>
+      <p class="fine">Estimated exposure from street tree records. Not live pollen. Not medical advice. Data: DataSF, TomTom, OpenStreetMap, Pollen Library.</p>
     </section>
   </main>
-
-  <footer class="wrap foot">Built at Make SF Better, a hack night with Mistral AI at Elastic, November 3, 2026.</footer>
-  <div id="tip" class="tip" hidden></div>
-  <script src="landing.js?v=2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.js"></script>
+  <script src="landing.js?v=6"></script>
 </body>
 </html>

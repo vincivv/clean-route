@@ -1121,3 +1121,5 @@ select { min-height: 44px; margin-top: 4px; }
   .ob-title { font-size: 30px; }
   .onboarding-inner { justify-content: flex-start; padding: 24px 16px; gap: 24px; }
 }
+
+.sidebar-limits { color: var(--ink-2); padding: 12px 0; }

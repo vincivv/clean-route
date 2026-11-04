@@ -233,7 +233,7 @@
     }
     map.touchZoomRotate.disableRotation();
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-    map.addControl(new maplibregl.AttributionControl({ compact: false, customAttribution: OSM_CREDIT }), 'bottom-right');
+    map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: OSM_CREDIT }), 'bottom-right');
 
     map.on('style.load', addDataLayers);
     map.on('click', onMapClick);
