@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clean Route</title>
+  <meta name="description" content="Walk San Francisco with less of the pollen that sets you off.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <main class="layout">
+      <aside class="panel" aria-label="Route planner">
+        <header class="masthead">
+          <div class="masthead-row">
+            <h1>Clean Route</h1>
+            <div id="air" class="air" hidden>
+              <span id="air-values" class="air-values"></span>
+              <span id="air-source" class="air-source"></span>
+            </div>
+          </div>
+          <p class="tagline">Walk SF with less of the pollen that sets you off.</p>
+        </header>
+
+        <div id="meta-error" class="notice notice-error" role="alert" hidden>
+          <p id="meta-error-text"></p>
+          <button id="meta-retry" type="button" class="btn btn-small">Try again</button>
+        </div>
+
+        <div id="profile-error" class="notice notice-error" role="alert" hidden>
+          <p id="profile-error-text"></p>
+          <button id="profile-retry" type="button" class="btn btn-small">Try again</button>
+        </div>
+
+        <div class="profile-bar">
+          <p id="profile-summary" class="profile-summary"></p>
+          <button id="profile-edit" type="button" class="link" hidden>Edit</button>
+        </div>
+
+        <section class="ask" aria-label="Where to">
+          <form id="ask-form">
+            <label for="ask-input" class="ask-label">Where to?</label>
+            <div class="ask-row">
+              <input id="ask-input" type="text" autocomplete="off" placeholder="Dolores Park">
+              <button id="mic" type="button" class="btn btn-mic">
+                <svg class="mic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 0 0-7 0v6A3.5 3.5 0 0 0 12 15Z"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3.5" fill="none"/></svg>
+                <span id="mic-label">Speak</span>
+              </button>
+              <button id="ask-submit" type="submit" class="btn btn-primary">Go</button>
+            </div>
+          </form>
+          <p id="mic-note" class="status" hidden></p>
+          <p id="ask-status" class="status" role="status" hidden></p>
+          <p id="transcript" class="transcript" hidden></p>
+        </section>
+
+        <section id="result" class="result" aria-label="Route result" aria-live="polite">
+          <p id="result-empty" class="result-empty">Say where you're going, or click the map to set a start and an end.</p>
+          <p id="route-status" class="status" role="status" hidden></p>
+          <div id="route-error" class="notice notice-error" role="alert" hidden>
+            <p id="route-error-text"></p>
+            <button id="route-retry" type="button" class="btn btn-small">Try again</button>
+          </div>
+          <div id="hero" class="hero" hidden>
+            <div id="hero-gain">
+              <p class="hero-pct"><span id="hero-pct-value"></span></p>
+              <p id="hero-pct-label" class="hero-pct-label">less estimated exposure</p>
+              <p id="hero-wide" class="hero-same-detail"></p>
+              <p id="hero-time" class="hero-time"></p>
+            </div>
+            <div id="hero-same" hidden>
+              <p class="hero-same-title">The shortest route is already the cleanest.</p>
+              <p id="hero-same-detail" class="hero-same-detail"></p>
+            </div>
+            <p id="hero-context" class="hero-context"></p>
+          </div>
+        </section>
+
+        <section class="controls" aria-label="Season and map options">
+          <div id="manual-controls" class="manual-controls" hidden>
+            <div class="field">
+              <span class="field-label" id="chips-label">Trees that set you off</span>
+              <div id="chips" class="chips" role="group" aria-labelledby="chips-label"></div>
+            </div>
+            <label class="switch"><span>I have asthma</span><input id="asthma" type="checkbox" role="switch"></label>
+          </div>
+
+          <div class="field">
+            <div class="month-head">
+              <label for="month" class="field-label">Month</label>
+              <output id="month-value" for="month" class="month-value">March</output>
+            </div>
+            <input id="month" type="range" min="1" max="12" step="1" value="3">
+            <div class="month-ends" aria-hidden="true"><span>Jan</span><span>Dec</span></div>
+            <p id="bloom-note" class="small"></p>
+          </div>
+
+          <label class="switch"><span>Street exposure layer</span><input id="heat-toggle" type="checkbox" role="switch" checked></label>
+
+          <div class="field" id="preset-field" hidden>
+            <label for="preset" class="field-label">Preset walk</label>
+            <select id="preset"><option value="">Choose a preset</option></select>
+          </div>
+
+          <button id="clear-route" type="button" class="link" hidden>Clear start and end</button>
+        </section>
+
+        <section id="details" class="details" aria-label="Route comparison" hidden>
+          <h2>Side by side</h2>
+          <table class="compare">
+            <thead>
+              <tr>
+                <th scope="col"><span class="visually-hidden">Measure</span></th>
+                <th scope="col" class="num"><span class="swatch swatch-short" aria-hidden="true"></span>Shortest</th>
+                <th scope="col" class="num"><span class="swatch swatch-clean" aria-hidden="true"></span>Clean</th>
+              </tr>
+            </thead>
+            <tbody id="compare-body"></tbody>
+          </table>
+
+          <h2>Main trees near each route</h2>
+          <div class="species-grid">
+            <div>
+              <h3>Shortest</h3>
+              <ul id="species-short" class="species"></ul>
+            </div>
+            <div>
+              <h3>Clean</h3>
+              <ul id="species-clean" class="species"></ul>
+            </div>
+          </div>
+
+          <div id="explanation-block" class="explanation-block" hidden>
+            <h2>Why this route</h2>
+            <p id="explanation" class="explanation"></p>
+          </div>
+
+          <details class="query">
+            <summary>Show the Elastic query</summary>
+            <pre id="elastic-query" tabindex="0"></pre>
+          </details>
+        </section>
+
+        <section class="symptoms" aria-label="Symptom search">
+          <form id="symptom-form">
+            <label for="symptom-input" class="field-label">Describe your symptoms</label>
+            <div class="symptom-row">
+              <input id="symptom-input" type="text" placeholder="My eyes itch every March" autocomplete="off">
+              <button id="symptom-submit" type="submit" class="btn">Search</button>
+            </div>
+          </form>
+          <p id="symptom-status" class="status" role="status" hidden></p>
+          <ul id="symptom-results" class="suggestions"></ul>
+          <p id="symptom-note" class="symptom-note" hidden></p>
+        </section>
+      </aside>
+
+      <div class="map-wrap">
+        <div id="map" aria-label="Map of San Francisco. Click to set a start, then an end."></div>
+        <p id="map-hint" class="map-hint" hidden></p>
+        <div class="legend">
+          <div class="legend-routes">
+            <span class="legend-item"><span class="legend-line legend-line-clean" aria-hidden="true"></span>Clean</span>
+            <span class="legend-item"><span class="legend-line legend-line-short" aria-hidden="true"></span>Shortest</span>
+          </div>
+          <div id="legend-heat" class="legend-heat">
+            <span class="legend-title">Street exposure</span>
+            <div class="legend-scale">
+              <span>Low</span>
+              <span id="legend-steps" class="legend-steps" aria-hidden="true"></span>
+              <span>High</span>
+            </div>
+          </div>
+          <p id="tile-status" class="legend-status" role="status" hidden></p>
+          <p id="heat-status" class="legend-status" role="status" hidden></p>
+          <button id="heat-retry" type="button" class="btn btn-small" hidden>Try again</button>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>Estimated exposure from street tree records. Not live pollen. Not medical advice.</p>
+      <div id="badges" class="badges"></div>
+    </footer>
+  </div>
+
+  <div id="onboarding" class="onboarding" hidden>
+    <div class="onboarding-inner">
+      <p class="onboarding-brand">Clean Route</p>
+
+      <form id="ob-ask" class="ob-step">
+        <div class="field">
+          <label for="ob-name" class="field-label">Your name</label>
+          <input id="ob-name" type="text" autocomplete="given-name" placeholder="Sam">
+        </div>
+        <label for="ob-text" class="ob-title">Tell us what you're allergic to, and whether you have asthma</label>
+        <textarea id="ob-text" rows="3" placeholder="I'm allergic to olive and birch, and I have mild asthma"></textarea>
+        <div class="ob-actions">
+          <button id="ob-mic" type="button" class="btn btn-mic btn-large">
+            <svg class="mic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 0 0-7 0v6A3.5 3.5 0 0 0 12 15Z"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3.5" fill="none"/></svg>
+            <span id="ob-mic-label">Speak</span>
+          </button>
+          <button id="ob-submit" type="submit" class="btn btn-primary btn-large">Continue</button>
+        </div>
+        <p id="ob-mic-note" class="status" hidden></p>
+        <p id="ob-status" class="status" role="status" hidden></p>
+        <div id="ob-error" class="notice notice-error" role="alert" hidden>
+          <p id="ob-error-text"></p>
+          <button id="ob-manual" type="button" class="btn btn-small">Continue without a profile</button>
+        </div>
+      </form>
+
+      <section id="ob-confirm" class="ob-step" hidden>
+        <h2 id="ob-confirm-title" class="ob-title"></h2>
+        <p id="ob-heard" class="transcript" hidden></p>
+
+        <div class="field">
+          <span class="field-label" id="ob-chips-label">Trees to avoid</span>
+          <div id="ob-chips" class="chips" role="group" aria-labelledby="ob-chips-label"></div>
+          <p id="ob-empty-note" class="small" hidden>No trees selected. Routes will count every tree.</p>
+        </div>
+
+        <label class="switch"><span>I have asthma</span><input id="ob-asthma" type="checkbox" role="switch"></label>
+
+        <div id="ob-reasons-block" class="ob-list-block" hidden>
+          <h3>Why we added these</h3>
+          <ul id="ob-reasons" class="ob-list"></ul>
+        </div>
+
+        <div id="ob-not-covered-block" class="ob-list-block" hidden>
+          <h3>What routes can't help with</h3>
+          <ul id="ob-not-covered" class="ob-list"></ul>
+        </div>
+
+        <p id="ob-save-status" class="status" role="status" hidden></p>
+        <p id="ob-storage-note" class="small" hidden>This browser won't remember your profile after you close it.</p>
+
+        <div class="ob-actions">
+          <button id="ob-done" type="button" class="btn btn-primary btn-large">Looks right, show the map</button>
+          <button id="ob-restart" type="button" class="link">Start over as someone new</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

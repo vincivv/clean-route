@@ -12,8 +12,10 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from dataclasses import replace
+
 from backend.routing import LOW_ALLERGEN, Network, WALK_M_PER_MIN
-from pipeline.config import (ALLERGENS_INDEX, CENTER, RADIUS_M, ROOT, SEGMENTS_JSON, SMALL_MODEL, TREES_INDEX, VENUE, VOICE_MODEL, LARGE_MODEL,
+from pipeline.config import (ALLERGENS_INDEX, CENTER, RADIUS_M, ROOT, SEGMENTS_INDEX, SMALL_MODEL, BUFFER_M, TREES_INDEX, VENUE, VOICE_MODEL, LARGE_MODEL,
                              es_client, has_elastic, has_mistral, mistral_client)
 from pipeline.index_elastic import load_table
 from pipeline.score_segments import buffer_polygon
@@ -87,6 +89,16 @@ def mistral():
     return mistral_client()
 
 
+def fast_then_large(call):
+    """Try the quick model; on a rate limit, wait briefly and fall back to Large."""
+    try:
+        return call(SMALL_MODEL)
+    except Exception as e:
+        print("small model failed:", type(e).__name__, str(e)[:120], flush=True)
+    time.sleep(1)
+    return call(LARGE_MODEL)
+
+
 def text_of(message):
     """Mistral Large 4 can return thinking chunks, so keep only the text."""
     content = message.content
@@ -128,12 +140,12 @@ class RouteRequest(BaseModel):
     profile_id: str | None = None
 
 
-def route_query(coords, groups):
+def route_query(coords, groups, metres=BUFFER_M):
     """The live query shown to judges: distinct trees around the whole route, summed inside Elastic."""
     step = max(1, len(coords) // 150)
     thin = coords[::step] + [coords[-1]]
     filters = [{"range": {"level": {"gte": 1}}},
-               {"geo_shape": {"location": {"shape": buffer_polygon(thin), "relation": "intersects"}}}]
+               {"geo_shape": {"location": {"shape": buffer_polygon(thin, metres), "relation": "intersects"}}}]
     if groups:
         filters.append({"terms": {"allergen_group": groups}})
     else:
@@ -146,6 +158,12 @@ def route_query(coords, groups):
             "top_species": {"terms": {"field": "scientific", "size": 5, "order": {"weight": "desc"}}, "aggs": {"weight": {"sum": {"field": "weight"}}}},
         },
     }
+
+
+def wide_exposure(coords, weights, groups, metres=100):
+    """Sensitivity check: the same sum with trees up to 100 m from the route."""
+    r = es().search(index=TREES_INDEX, **route_query(coords, groups, metres))
+    return sum(b["weight"]["value"] * weights.get(b["key"], 0.0) for b in r["aggregations"]["by_group"]["buckets"])
 
 
 def measure(coords, weights, groups):
@@ -167,18 +185,51 @@ def measure(coords, weights, groups):
             "trees_near": r["hits"]["total"]["value"], "by_group": by, "top_species": top}, q
 
 
+@lru_cache(maxsize=128)
+def _corridor(a, b, pad_m, groups):
+    """Tile the corridor and fetch all tiles in one _msearch so Elastic runs them concurrently."""
+    pa, pb = NET.nodes[a], NET.nodes[b]
+    dlat, dlon = pad_m / 111_320, pad_m / (111_320 * 0.79)
+    north, south = max(pa[0], pb[0]) + dlat, min(pa[0], pb[0]) - dlat
+    west, east = min(pa[1], pb[1]) - dlon, max(pa[1], pb[1]) + dlon
+    want = {"bool": {"should": [{"exists": {"field": f"scores.{g}"}} for g in groups], "minimum_should_match": 1}} if groups else {"range": {"total_weight": {"gt": 0}}}
+    searches, shown = [], None
+    n = 3
+    for i in range(n):
+        for j in range(n):
+            box = {"top_left": {"lat": north - (north - south) * i / n, "lon": west + (east - west) * j / n},
+                   "bottom_right": {"lat": north - (north - south) * (i + 1) / n, "lon": west + (east - west) * (j + 1) / n}}
+            query = {"bool": {"filter": [want, {"geo_bounding_box": {"line": box}}]}}
+            shown = shown or query
+            searches += [{"index": SEGMENTS_INDEX}, {"size": 10000, "_source": ["scores"], "query": query}]
+    scores = {}
+    for r in es().msearch(searches=searches)["responses"]:
+        if "error" in r:
+            raise HTTPException(502, "Elastic corridor query failed")
+        for h in r["hits"]["hits"]:
+            scores[h["_id"]] = h["_source"].get("scores", {})
+    return scores, json.dumps(shown)
+
+
+def corridor_scores(a, b, shortest_m, max_detour, groups=None):
+    """Pull street scores from Elastic for the area a walk can reach within its detour budget.
+
+    A walk at most k times the shortest distance D stays inside an ellipse reaching D * sqrt(k^2 - 1) / 2
+    beyond the straight line, so anything outside this box would break the budget anyway.
+    """
+    pad_m = round(max(300.0, shortest_m * (max_detour ** 2 - 1) ** 0.5 / 2), -1)
+    scores, shown = _corridor(a, b, pad_m, tuple(sorted(groups)) if groups else None)
+    return scores, json.loads(shown)
+
+
 def explain(s, c, summary, names, month):
-    if not has_mistral():
-        return None
-    facts = {"month": MONTHS[month], "person_allergens": names, "shortest": {k: s[k] for k in ("minutes", "exposure", "top_species")},
-             "clean": {k: c[k] for k in ("minutes", "exposure", "top_species")}, "summary": summary}
-    try:
-        r = mistral().chat.complete(model=SMALL_MODEL, max_tokens=90, messages=[
-            {"role": "system", "content": "Explain a walking route choice in at most two short plain sentences. Use only the numbers and species in the JSON, do no arithmetic. Never promise fewer symptoms. No medical advice."},
-            {"role": "user", "content": json.dumps(facts)}])
-        return text_of(r.choices[0].message)
-    except Exception:
-        return None
+    """Plain sentences built straight from Elastic's numbers, with no LLM arithmetic in the route path."""
+    who = ", ".join(names) if isinstance(names, list) else names
+    if c is s:
+        return f"For {who} in {MONTHS[month]}, the shortest route is already the cleanest one we found."
+    main = s["top_species"][0]["common"] if s["top_species"] else None
+    text = f"In {MONTHS[month]}, this route passes {c['allergenic_trees_near']} trees that matter for {who}, compared with {s['allergenic_trees_near']} on the direct route, for {summary['extra_minutes']} more minutes."
+    return text + (f" The main source on the direct route is {main}." if main else "")
 
 
 @app.post("/api/route")
@@ -195,9 +246,12 @@ def route(req: RouteRequest):
     if a == b:
         raise HTTPException(400, "Start and end are the same point")
     short_path = NET.shortest(a, b)
-    clean_path = NET.clean(a, b, weights, asthma, req.max_detour)
-    short = NET.stats(short_path, weights) | {"coords": NET.coords(short_path)}
-    clean = NET.stats(clean_path, weights) | {"coords": NET.coords(clean_path)}
+    shortest_m = NET.stats(short_path, {})["length_m"]
+    live, corridor_query = corridor_scores(a, b, shortest_m, req.max_detour, groups)
+    net = replace(NET, scores=live)
+    clean_path = net.clean(a, b, weights, asthma, req.max_detour)
+    short = net.stats(short_path, weights) | {"coords": net.coords(short_path)}
+    clean = net.stats(clean_path, weights) | {"coords": net.coords(clean_path)}
     m, _ = measure(short["coords"], weights, groups)
     short |= m
     m, q = measure(clean["coords"], weights, groups)
@@ -206,11 +260,14 @@ def route(req: RouteRequest):
     air_better = asthma and (clean["major_road_share"] + clean["pollution_zone_share"] < short["major_road_share"] + short["pollution_zone_share"])
     if clean["exposure"] >= short["exposure"] and not air_better:
         clean = short
+    same = clean is short
     reduction = round(100 * (1 - clean["exposure"] / short["exposure"]), 1) if short["exposure"] > 0 else 0.0
     summary = {"extra_minutes": round((clean["length_m"] - short["length_m"]) / WALK_M_PER_MIN, 1),
-               "extra_meters": round(clean["length_m"] - short["length_m"]), "exposure_reduction_pct": reduction}
+               "extra_meters": round(clean["length_m"] - short["length_m"]), "exposure_reduction_pct": reduction, "same_route": same}
+    wide_short, wide_clean = wide_exposure(short["coords"], weights, groups), wide_exposure(clean["coords"], weights, groups)
+    summary["reduction_within_100m_pct"] = round(100 * (1 - wide_clean / wide_short), 1) if wide_short > 0 else 0.0
     names = [LABELS.get(g, g) for g in groups] if groups else "all tree pollen"
-    return {"shortest": short, "clean": clean, "summary": summary, "explanation": explain(short, clean, summary, names, req.month), "elastic_query": q,
+    return {"shortest": short, "clean": clean, "summary": summary, "explanation": explain(short, clean, summary, names, req.month), "elastic_query": q, "corridor_query": {"query": corridor_query, "segments_loaded": len(live)},
             "applied": {"groups": groups, "asthma": asthma, "month": req.month}}
 
 
@@ -237,18 +294,32 @@ class Understood(BaseModel):
     asthma: bool | None = Field(description="True or false if they said so, otherwise null")
     reasons: list[str] = Field(description="Short notes on any added cross-reactive group")
     not_covered: list[str] = Field(description="Things they named that street trees can't explain, like grass, ragweed, dust or cats")
-    start_text: str | None
-    end_text: str | None
+    start_text: str | None = Field(description="Only the starting place name, a few words, or null")
+    end_text: str | None = Field(description="Only the destination place name, a few words, or null")
+
+
+def trip_places(text, start, end):
+    """Prefer the person's literal words, and reject model output that isn't a short place name."""
+    stop = r"(?=[,.;!?]|\s+(?:and|but|please|because|i\s|i'm)\b|$)"
+    m = re.search(rf"\bfrom\s+(.+?)\s+to\s+(.+?){stop}", text, re.I)
+    if m:
+        return m.group(1).strip(), m.group(2).strip()
+    m = re.search(rf"\b(?:walk|walking|go|going|head|heading|take|get|route|directions?)\b[^.]*?\bto\s+((?:the\s+)?[A-Z0-9].+?){stop}", text)
+    if m:
+        end = m.group(1).strip()
+    clean = lambda p: p.strip(" *.") if p and len(p) <= 50 and "\n" not in p else None
+    return (clean(start), clean(end)) if re.search(r"\b(walk|walking|go|going|head|heading|take|get|route|directions?|from|to)\b", text.replace("allergic to", ""), re.I) else (None, None)
 
 
 def understand(text):
     require_mistral()
     allowed = [g for g in BLOOM if g != LOW_ALLERGEN]
-    r = mistral().chat.parse(model=LARGE_MODEL, response_format=Understood, messages=[
+    r = fast_then_large(lambda model: mistral().chat.parse(model=model, response_format=Understood, messages=[
         {"role": "system", "content": f"Extract health-profile and trip details from what a San Francisco walker says. Allowed groups: {', '.join(allowed)}. Use only those ids. Birch relates to alder; cypress family includes juniper and cedar. Olive relates to ash and privet. Add a cross-reactive group only if it is well established, and note why. If they say only 'pollen' or 'trees', return an empty groups list. Do not invent places."},
-        {"role": "user", "content": text}])
+        {"role": "user", "content": text}]))
     u = r.choices[0].message.parsed
     u.groups = [g for g in u.groups if g in allowed]
+    u.start_text, u.end_text = trip_places(text, u.start_text, u.end_text)
     return u
 
 
@@ -419,6 +490,26 @@ def air():
         return _air(int(time.time() // 900))
     except Exception as e:
         raise HTTPException(502, f"Open-Meteo unavailable: {type(e).__name__}")
+
+
+@app.on_event("startup")
+def warm_presets():
+    """Pre-load preset corridors in the background so the first demo click is fast."""
+    import threading
+
+    def warm():
+        if not has_elastic():
+            return
+        for p in meta()["presets"]:
+            try:
+                a, b = NET.nearest(p["start"]), NET.nearest(p["end"])
+                m = NET.stats(NET.shortest(a, b), {})["length_m"]
+                corridor_scores(a, b, m, 1.3)
+                corridor_scores(a, b, m, 1.3, ["plane"])
+            except Exception as e:
+                print("warm failed:", type(e).__name__, flush=True)
+
+    threading.Thread(target=warm, daemon=True).start()
 
 
 frontend = Path(ROOT / "frontend")

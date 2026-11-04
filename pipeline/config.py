@@ -28,7 +28,7 @@ ZONE_INDEX = "cr_pollution_zone"
 INFERENCE_ID = "cr-mistral-embed"
 
 LARGE_MODEL = "mistral-large-4"
-SMALL_MODEL = "mistral-small-latest"
+SMALL_MODEL = "ministral-14b-latest"
 VOICE_MODEL = "voxtral-mini-latest"
 
 
@@ -43,7 +43,7 @@ def has_mistral() -> bool:
 def es_client():
     from elasticsearch import Elasticsearch
 
-    return Elasticsearch(os.environ["ELASTIC_ENDPOINT"], api_key=os.environ["ELASTIC_API_KEY"], request_timeout=120)
+    return Elasticsearch(os.environ["ELASTIC_ENDPOINT"], api_key=os.environ["ELASTIC_API_KEY"], request_timeout=120, http_compress=True)
 
 
 def mistral_client():

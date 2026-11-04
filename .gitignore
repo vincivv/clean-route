@@ -5,3 +5,5 @@ __pycache__/
 data/raw/
 data/cache/
 .DS_Store
+cache/
+.claude/
